@@ -4,5 +4,5 @@
 
 ```bash
 npm i
-npm run dev -- ../path-to-file.ewprj
+npm run dev -- --verbose ../path-to-file.ewprj ../path-to-file2.ewprj
 ```
