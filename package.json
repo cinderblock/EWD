@@ -4,12 +4,19 @@
   "description": "Scripts to decode compressed EWB files",
   "main": "decode",
   "scripts": {
-    "start": "ts-node decode.ts"
+    "start": "ts-node decode.ts",
+    "dev": "nodemon decode.ts"
   },
   "author": "Cameron Tacklind <cameron@tacklind.com>",
   "license": "ISC",
   "devDependencies": {
     "@types/node": "^15.12.4",
+    "@typescript-eslint/eslint-plugin": "^4.28.0",
+    "@typescript-eslint/parser": "^4.28.0",
+    "eslint": "^7.29.0",
+    "eslint-config-airbnb": "^18.2.1",
+    "nodemon": "^2.0.7",
+    "prettier": "^2.3.2",
     "ts-node": "^10.0.0",
     "typescript": "^4.3.4"
   },

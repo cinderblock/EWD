@@ -1,0 +1,8 @@
+// cSpell Settings
+{
+  "version": "0.1",
+  "language": "en",
+  "ignorePaths": ["node_modules/**"],
+  "dictionaries": ["en_US", "typescript", "node", "filetypes", "npm", "local"],
+  "dictionaryDefinitions": [{ "name": "local", "path": "./dictionary.txt" }]
+}
