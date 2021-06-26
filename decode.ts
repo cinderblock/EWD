@@ -1,4 +1,4 @@
-import promises from 'fs';
+import { promises } from 'fs';
 
 export async function main(filename: string) {
   if (!filename) throw new Error('No filename provided');
@@ -11,7 +11,7 @@ export async function main(filename: string) {
     throw new Error(`I don't know how to open: ${filename}`);
   }
 
-  const file = await promises.open();
+  const file = await promises.open(filename, 'r');
 }
 
 if (require.main === module) {
