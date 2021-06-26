@@ -1,5 +1,6 @@
 import { promises } from 'fs';
 import winston from 'winston';
+import { UnexpectedBuffer } from './UnexpectedBuffer';
 
 export async function main(filename: string, logger: winston.Logger) {
   if (!filename) throw new Error('No filename provided');
@@ -23,6 +24,12 @@ export async function main(filename: string, logger: winston.Logger) {
   if (bytesRead != expectedHeader.length) throw new Error('Failed to read enough bytes for the header we expect');
 
   logger.info('Read header successfully');
+
+  if (!buffer.equals(expectedHeader)) {
+    throw new UnexpectedBuffer('File header does not match', expectedHeader, buffer);
+  }
+
+  logger.info('Header matches as expected');
 }
 
 if (require.main === module) {
