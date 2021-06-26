@@ -20,11 +20,11 @@ export async function main() {
   };
 
   const logger = winston.createLogger({
-    level: verbose ? 'info' : 'error',
+    level: verbose ? 'verbose' : 'info',
     format: winston.format.json(),
     transports: [
       new winston.transports.Console({
-        format: winston.format.simple(),
+        format: winston.format.combine(winston.format.colorize(), winston.format.simple()),
       }),
     ],
   });
@@ -32,7 +32,7 @@ export async function main() {
   if (concurrent) await Promise.all(files.map(f => decode(f, logger)));
   else
     for (const f of files) {
-      logger.notice('Next file');
+      logger.info('Next file');
       await decode(f, logger);
     }
 }

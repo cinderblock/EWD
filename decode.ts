@@ -8,10 +8,10 @@ export async function decode(filename: string, logger: winston.Logger) {
   let expectedHeader: Buffer;
 
   if (filename.endsWith('.ewprj')) {
-    logger.info(`Opening EWPRJ: ${filename}`);
+    logger.verbose(`Opening EWPRJ: ${filename}`);
     expectedHeader = Buffer.from('CompressedElectronicsWorkbenchXML');
   } else if (filename.endsWith('.ewprj')) {
-    logger.info(`Opening MultiSIM: ${filename}`);
+    logger.verbose(`Opening MultiSIM: ${filename}`);
     expectedHeader = Buffer.from('MSMCompressedElectronicsWorkbenchXML');
   } else {
     throw new Error(`I don't know how to open: ${filename}`);
@@ -57,17 +57,17 @@ export async function decode(filename: string, logger: winston.Logger) {
 
   let header = await read(expectedHeader.length);
 
-  logger.info('Read header successfully');
+  logger.verbose('Read header successfully');
 
   if (!header.equals(expectedHeader)) {
     throw new UnexpectedBuffer('File header does not match', expectedHeader, header);
   }
 
-  logger.info('Header matches as expected');
+  logger.verbose('Header matches as expected');
 
   const finalLength = await readNumber(8);
 
   if (typeof finalLength == 'bigint') throw new Error('Cannot handle files this large');
 
-  logger.info(`Full size: ${finalLength}`);
+  logger.verbose(`Full size: ${finalLength}`);
 }
