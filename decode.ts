@@ -18,23 +18,28 @@ export async function decode(filename: string, logger: winston.Logger) {
   }
 
   const file = await promises.open(filename, 'r');
+  let pos = 0;
 
-  {
-    const { bytesRead, buffer } = await file.read(
-      Buffer.allocUnsafe(expectedHeader.length),
-      0,
-      expectedHeader.length,
-      0,
-    );
+  async function read(length: number) {
+    const { bytesRead, buffer } = await file.read(Buffer.allocUnsafe(length), 0, length, pos);
 
-    if (bytesRead != expectedHeader.length) throw new Error('Failed to read enough bytes for the header we expect');
+    pos += bytesRead;
 
-    logger.info('Read header successfully');
-
-    if (!buffer.equals(expectedHeader)) {
-      throw new UnexpectedBuffer('File header does not match', expectedHeader, buffer);
+    if (bytesRead != length) {
+      logger.error(`BytesRead: ${bytesRead} ${length}`);
+      throw new Error('Failed to read as many bytes as we expect');
     }
 
-    logger.info('Header matches as expected');
+    return buffer;
   }
+
+  let header = await read(expectedHeader.length);
+
+  logger.info('Read header successfully');
+
+  if (!header.equals(expectedHeader)) {
+    throw new UnexpectedBuffer('File header does not match', expectedHeader, header);
+  }
+
+  logger.info('Header matches as expected');
 }
