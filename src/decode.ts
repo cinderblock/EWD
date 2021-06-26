@@ -1,6 +1,6 @@
 import { promises } from 'fs';
 import winston from 'winston';
-import { UnexpectedBuffer } from './UnexpectedBuffer';
+import { UnexpectedBuffer } from './util/UnexpectedBuffer';
 
 export async function decode(filename: string, logger: winston.Logger) {
   if (!filename) throw new Error('No filename provided');
