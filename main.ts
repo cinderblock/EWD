@@ -30,7 +30,11 @@ export async function main() {
   });
 
   if (concurrent) await Promise.all(files.map(f => decode(f, logger)));
-  else for (const f of files) await decode(f, logger);
+  else
+    for (const f of files) {
+      logger.notice('Next file');
+      await decode(f, logger);
+    }
 }
 
 if (require.main === module) {
