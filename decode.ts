@@ -2,7 +2,7 @@ import { promises } from 'fs';
 import winston from 'winston';
 import { UnexpectedBuffer } from './UnexpectedBuffer';
 
-export async function main(filename: string, logger: winston.Logger) {
+export async function decode(filename: string, logger: winston.Logger) {
   if (!filename) throw new Error('No filename provided');
 
   let expectedHeader: Buffer;
@@ -30,23 +30,4 @@ export async function main(filename: string, logger: winston.Logger) {
   }
 
   logger.info('Header matches as expected');
-}
-
-if (require.main === module) {
-  const filename = process.argv[process.argv.length - 1];
-
-  const logger = winston.createLogger({
-    level: 'info',
-    format: winston.format.json(),
-    defaultMeta: { service: 'user-service' },
-    transports: [
-      new winston.transports.Console({
-        format: winston.format.simple(),
-      }),
-    ],
-  });
-
-  main(filename, logger).catch(e => {
-    throw e;
-  });
 }

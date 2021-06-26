@@ -4,8 +4,8 @@
   "description": "Scripts to decode compressed EWB files",
   "main": "decode",
   "scripts": {
-    "start": "ts-node decode.ts",
-    "dev": "nodemon decode.ts"
+    "start": "ts-node main.ts",
+    "dev": "nodemon main.ts"
   },
   "author": "Cameron Tacklind <cameron@tacklind.com>",
   "license": "ISC",
