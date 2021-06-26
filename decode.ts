@@ -33,6 +33,20 @@ export async function decode(filename: string, logger: winston.Logger) {
     return buffer;
   }
 
+  async function readNumber(size: number) {
+    const buffer = await read(size);
+    if ((size == 8 && buffer[6] && buffer[7]) || (size == 7 && buffer[6])) {
+      return buffer.readBigUInt64LE();
+    }
+
+    if (size > 8) throw new RangeError('Cannot handle size > 8');
+
+    // Buffer.readUIntLE() can only handle number up to 6 bytes
+    if (size >= 6) size = 6;
+
+    return buffer.readUIntLE(0, size);
+  }
+
   let header = await read(expectedHeader.length);
 
   logger.info('Read header successfully');
@@ -42,4 +56,10 @@ export async function decode(filename: string, logger: winston.Logger) {
   }
 
   logger.info('Header matches as expected');
+
+  const finalLength = await readNumber(8);
+
+  if (typeof finalLength == 'bigint') throw new Error('Cannot handle files this large');
+
+  logger.info(`Full size: ${finalLength}`);
 }
