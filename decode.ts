@@ -1,15 +1,16 @@
 import { promises } from 'fs';
+import winston from 'winston';
 
-export async function main(filename: string) {
+export async function main(filename: string, logger: winston.Logger) {
   if (!filename) throw new Error('No filename provided');
 
   let expectedHeader: Buffer;
 
   if (filename.endsWith('.ewprj')) {
-    console.log('Opening EWPRJ:', filename);
+    logger.info(`Opening EWPRJ: ${filename}`);
     expectedHeader = Buffer.from('CompressedElectronicsWorkbenchXML');
   } else if (filename.endsWith('.ewprj')) {
-    console.log('Opening MultiSIM:', filename);
+    logger.info(`Opening MultiSIM: ${filename}`);
     expectedHeader = Buffer.from('MSMCompressedElectronicsWorkbenchXML');
   } else {
     throw new Error(`I don't know how to open: ${filename}`);
@@ -21,13 +22,24 @@ export async function main(filename: string) {
 
   if (bytesRead != expectedHeader.length) throw new Error('Failed to read enough bytes for the header we expect');
 
-  console.log('Read header');
+  logger.info('Read header successfully');
 }
 
 if (require.main === module) {
   const filename = process.argv[process.argv.length - 1];
 
-  main(filename).catch(e => {
+  const logger = winston.createLogger({
+    level: 'info',
+    format: winston.format.json(),
+    defaultMeta: { service: 'user-service' },
+    transports: [
+      new winston.transports.Console({
+        format: winston.format.simple(),
+      }),
+    ],
+  });
+
+  main(filename, logger).catch(e => {
     throw e;
   });
 }
