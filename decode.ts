@@ -33,6 +33,14 @@ export async function decode(filename: string, logger: winston.Logger) {
     return buffer;
   }
 
+  async function readNumber(size: 1): Promise<number>;
+  async function readNumber(size: 2): Promise<number>;
+  async function readNumber(size: 3): Promise<number>;
+  async function readNumber(size: 4): Promise<number>;
+  async function readNumber(size: 5): Promise<number>;
+  async function readNumber(size: 6): Promise<number>;
+  async function readNumber(size: 7): Promise<number | bigint>;
+  async function readNumber(size: 8): Promise<number | bigint>;
   async function readNumber(size: number) {
     const buffer = await read(size);
     if ((size == 8 && buffer[6] && buffer[7]) || (size == 7 && buffer[6])) {
