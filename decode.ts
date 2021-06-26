@@ -70,4 +70,23 @@ export async function decode(filename: string, logger: winston.Logger) {
   if (typeof finalLength == 'bigint') throw new Error('Cannot handle files this large');
 
   logger.verbose(`Full size: ${finalLength}`);
+
+  let i = 0;
+
+  while (true) {
+    let length: number;
+    try {
+      length = await readNumber(4);
+    } catch (e) {
+      logger.verbose('Error reading next section, as expected');
+      break;
+    }
+    const blockSize = await readNumber(4);
+
+    logger.verbose(`Section #${i} read ${blockSize} bytes, decompresses to ${length}`);
+
+    pos += blockSize;
+
+    i++;
+  }
 }
