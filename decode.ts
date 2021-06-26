@@ -1,17 +1,23 @@
 import promises from 'fs';
 
-const filename = process.argv[process.argv.length - 1];
+export async function main(filename: string) {
+  if (!filename) throw new Error('No filename provided');
 
-if (!filename) throw new Error('No filename provided');
+  if (filename.endsWith('.ewprj')) {
+    console.log('Opening EWPRJ:', filename);
+  } else if (filename.endsWith('.ewprj')) {
+    console.log('Opening MultiSIM:', filename);
+  } else {
+    throw new Error(`I don't know how to open: ${filename}`);
+  }
 
-console.log('Opening:', filename);
+  const file = await promises.open();
+}
 
-// const file =
+if (require.main === module) {
+  const filename = process.argv[process.argv.length - 1];
 
-if (filename.endsWith('.ewprj')) {
-  console.log('Opening EWPRJ:', filename);
-} else if (filename.endsWith('.ewprj')) {
-  console.log('Opening MultiSIM:', filename);
-} else {
-  throw new Error(`I don't know how to open: ${filename}`);
+  main(filename).catch(e => {
+    throw e;
+  });
 }
