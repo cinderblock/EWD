@@ -1,6 +1,6 @@
 import { promises } from 'fs';
 import winston from 'winston';
-import { UnexpectedBuffer } from './util/UnexpectedBuffer';
+import { UnexpectedValue } from './util/UnexpectedValue';
 
 export async function decode(filename: string, logger: winston.Logger) {
   if (!filename) throw new Error('No filename provided');
@@ -26,8 +26,7 @@ export async function decode(filename: string, logger: winston.Logger) {
     pos += bytesRead;
 
     if (bytesRead != length) {
-      logger.error(`BytesRead: ${bytesRead} ${length}`);
-      throw new Error('Failed to read as many bytes as we expect');
+      throw new UnexpectedValue('Failed to read as many bytes as we expect', length, bytesRead);
     }
 
     return buffer;
@@ -60,7 +59,7 @@ export async function decode(filename: string, logger: winston.Logger) {
   logger.verbose('Read header successfully');
 
   if (!header.equals(expectedHeader)) {
-    throw new UnexpectedBuffer('File header does not match', expectedHeader, header);
+    throw new UnexpectedValue('File header does not match', expectedHeader, header);
   }
 
   logger.verbose('Header matches as expected');
