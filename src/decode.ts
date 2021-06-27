@@ -72,19 +72,17 @@ export async function decode(filename: string, logger: winston.Logger) {
 
   let i = 0;
 
-  while (true) {
-    let length: number;
-    try {
-      length = await readNumber(4);
-    } catch (e) {
-      logger.verbose('Error reading next section, as expected');
-      break;
-    }
+  let bytesRead = 0;
+
+  while (bytesRead < finalLength) {
+    const length = await readNumber(4);
     const blockSize = await readNumber(4);
 
     logger.verbose(`Section #${i} read ${blockSize} bytes, decompresses to ${length}`);
 
     pos += blockSize;
+
+    bytesRead += length;
 
     i++;
   }
