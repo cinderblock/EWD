@@ -1,4 +1,4 @@
-import { promises } from 'fs';
+import { promises as fs } from 'fs';
 import winston from 'winston';
 import { FirstDifference } from './util/BufferFirstDifference';
 import { UnexpectedValue } from './util/UnexpectedValue';
@@ -20,7 +20,7 @@ export async function decode(filename: string, logger: winston.Logger) {
     throw new Error(`I don't know how to parse: ${filename}`);
   }
 
-  const file = await promises.open(filename, 'r');
+  const file = await fs.open(filename, 'r');
   let pos = 0;
 
   async function read(length: number) {
