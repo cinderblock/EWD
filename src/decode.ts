@@ -10,7 +10,7 @@ export async function decode(filename: string, logger: winston.Logger) {
   if (filename.endsWith('.ewprj')) {
     logger.verbose(`Opening EWPRJ: ${filename}`);
     expectedHeader = Buffer.from('CompressedElectronicsWorkbenchXML');
-  } else if (filename.endsWith('.ewprj')) {
+  } else if (filename.endsWith('.ms14')) {
     logger.verbose(`Opening MultiSIM: ${filename}`);
     expectedHeader = Buffer.from('MSMCompressedElectronicsWorkbenchXML');
   } else {
