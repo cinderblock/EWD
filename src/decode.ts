@@ -80,7 +80,7 @@ export async function decode(filename: string, logger: winston.Logger) {
 
     logger.verbose(`Section #${i} read ${blockSize} bytes, decompresses to ${length}`);
 
-    pos += blockSize;
+    const buffer = await read(blockSize);
 
     bytesRead += length;
 
