@@ -14,7 +14,7 @@ export async function decode(filename: string, logger: winston.Logger) {
     logger.verbose(`Opening MultiSIM: ${filename}`);
     expectedHeader = Buffer.from('MSMCompressedElectronicsWorkbenchXML');
   } else {
-    throw new Error(`I don't know how to open: ${filename}`);
+    throw new Error(`I don't know how to parse: ${filename}`);
   }
 
   const file = await promises.open(filename, 'r');
