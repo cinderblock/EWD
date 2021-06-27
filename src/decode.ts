@@ -57,6 +57,7 @@ export async function decode(filename: string, logger: winston.Logger) {
     return buffer.readUIntLE(0, size);
   }
 
+  try {
   let header = await read(expectedHeader.length);
 
   logger.verbose('Read header successfully');
@@ -112,5 +113,10 @@ export async function decode(filename: string, logger: winston.Logger) {
     if (!i) logger.verbose('Matches: ' + buffer.slice(0, 103).toString('hex'));
 
     i++;
+  }
+  } catch (e) {
+    throw e;
+  } finally {
+    await file.close();
   }
 }
