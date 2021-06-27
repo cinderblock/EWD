@@ -58,62 +58,62 @@ export async function decode(filename: string, logger: winston.Logger) {
   }
 
   try {
-  let header = await read(expectedHeader.length);
+    let header = await read(expectedHeader.length);
 
-  logger.verbose('Read header successfully');
+    logger.verbose('Read header successfully');
 
-  if (!header.equals(expectedHeader)) {
-    throw new UnexpectedValue('File header does not match', expectedHeader, header);
-  }
-
-  logger.verbose('Header matches as expected');
-
-  const finalLength = await readNumber(8);
-
-  if (typeof finalLength == 'bigint') throw new Error('Cannot handle files this large');
-
-  logger.verbose(`Full size: ${finalLength}`);
-
-  let i = 0;
-
-  let bytesRead = 0;
-
-  while (bytesRead < finalLength) {
-    const length = await readNumber(4);
-    const blockSize = await readNumber(4);
-
-    logger.verbose(`Section #${i} read ${blockSize} bytes, decompresses to ${length}`);
-
-    const buffer = await read(blockSize);
-
-    bytesRead += length;
-
-    if (!i) {
-      for (let result in results) {
-        const diff = FirstDifference(results[result], buffer);
-        logger.verbose(`Difference from #${result} at: ${diff ?? 'None!'}`);
-      }
-
-      results.push(buffer);
-      logger.info('pushed' + results.length);
+    if (!header.equals(expectedHeader)) {
+      throw new UnexpectedValue('File header does not match', expectedHeader, header);
     }
 
-    const header = Buffer.allocUnsafe(8);
+    logger.verbose('Header matches as expected');
 
-    header.writeUInt32LE(length, 0);
-    header.writeUInt32LE(blockSize, 4);
+    const finalLength = await readNumber(8);
 
-    const full = Buffer.concat([header, buffer]);
+    if (typeof finalLength == 'bigint') throw new Error('Cannot handle files this large');
 
-    const size = i ? 20 : 160;
+    logger.verbose(`Full size: ${finalLength}`);
 
-    logger.verbose(buffer.slice(0, size).toString('hex'));
-    if (!i) logger.verbose(buffer.slice(0, size).toString());
+    let i = 0;
 
-    if (!i) logger.verbose('Matches: ' + buffer.slice(0, 103).toString('hex'));
+    let bytesRead = 0;
 
-    i++;
-  }
+    while (bytesRead < finalLength) {
+      const length = await readNumber(4);
+      const blockSize = await readNumber(4);
+
+      logger.verbose(`Section #${i} read ${blockSize} bytes, decompresses to ${length}`);
+
+      const buffer = await read(blockSize);
+
+      bytesRead += length;
+
+      if (!i) {
+        for (let result in results) {
+          const diff = FirstDifference(results[result], buffer);
+          logger.verbose(`Difference from #${result} at: ${diff ?? 'None!'}`);
+        }
+
+        results.push(buffer);
+        logger.info('pushed' + results.length);
+      }
+
+      const header = Buffer.allocUnsafe(8);
+
+      header.writeUInt32LE(length, 0);
+      header.writeUInt32LE(blockSize, 4);
+
+      const full = Buffer.concat([header, buffer]);
+
+      const size = i ? 20 : 160;
+
+      logger.verbose(buffer.slice(0, size).toString('hex'));
+      if (!i) logger.verbose(buffer.slice(0, size).toString());
+
+      if (!i) logger.verbose('Matches: ' + buffer.slice(0, 103).toString('hex'));
+
+      i++;
+    }
   } catch (e) {
     throw e;
   } finally {
