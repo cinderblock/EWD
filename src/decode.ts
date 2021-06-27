@@ -1,6 +1,9 @@
 import { promises } from 'fs';
 import winston from 'winston';
+import { FirstDifference } from './util/BufferFirstDifference';
 import { UnexpectedValue } from './util/UnexpectedValue';
+
+const results: Buffer[] = [];
 
 export async function decode(filename: string, logger: winston.Logger) {
   if (!filename) throw new Error('No filename provided');
@@ -83,6 +86,30 @@ export async function decode(filename: string, logger: winston.Logger) {
     const buffer = await read(blockSize);
 
     bytesRead += length;
+
+    if (!i) {
+      for (let result in results) {
+        const diff = FirstDifference(results[result], buffer);
+        logger.verbose(`Difference from #${result} at: ${diff ?? 'None!'}`);
+      }
+
+      results.push(buffer);
+      logger.info('pushed' + results.length);
+    }
+
+    const header = Buffer.allocUnsafe(8);
+
+    header.writeUInt32LE(length, 0);
+    header.writeUInt32LE(blockSize, 4);
+
+    const full = Buffer.concat([header, buffer]);
+
+    const size = i ? 20 : 160;
+
+    logger.verbose(buffer.slice(0, size).toString('hex'));
+    if (!i) logger.verbose(buffer.slice(0, size).toString());
+
+    if (!i) logger.verbose('Matches: ' + buffer.slice(0, 103).toString('hex'));
 
     i++;
   }
