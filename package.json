@@ -11,6 +11,7 @@
   "license": "ISC",
   "devDependencies": {
     "@types/command-line-args": "^5.0.0",
+    "@types/decompress": "^4.2.3",
     "@types/node": "^15.12.4",
     "@typescript-eslint/eslint-plugin": "^4.28.0",
     "@typescript-eslint/parser": "^4.28.0",
@@ -23,6 +24,7 @@
   },
   "dependencies": {
     "command-line-args": "^5.1.1",
+    "decompress": "^4.2.1",
     "node": "^16.3.0",
     "winston": "^3.3.3"
   }

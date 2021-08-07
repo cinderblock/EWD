@@ -2,6 +2,10 @@ import { promises as fs } from 'fs';
 import winston from 'winston';
 import { FirstDifference } from './util/BufferFirstDifference';
 import { UnexpectedValue } from './util/UnexpectedValue';
+import zlib from 'zlib';
+import { promisify } from 'util';
+
+const inflate = promisify(zlib.inflate);
 
 const results: Buffer[] = [];
 
