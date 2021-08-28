@@ -1,9 +1,8 @@
 {
-  "extends": ["eslint:recommended", "plugin:@typescript-eslint/recommended", "airbnb"],
+  "extends": ["eslint:recommended", "plugin:@typescript-eslint/recommended", "airbnb", "prettier"],
   "parser": "@typescript-eslint/parser",
   "plugins": ["@typescript-eslint"],
   "rules": {
-    "@typescript-eslint/indent": ["error", 2],
     "@typescript-eslint/no-unused-vars": "error",
     "@typescript-eslint/no-explicit-any": "error"
   }
