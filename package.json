@@ -15,12 +15,15 @@
   },
   "dependencies": {
     "command-line-args": "^5.1.1",
+    "implode-decoder": "^1.0.1",
     "node": "^16.3.0",
+    "stream-buffers": "^3.0.2",
     "winston": "^3.3.3"
   },
   "devDependencies": {
     "@types/command-line-args": "^5.0.0",
     "@types/node": "^15.12.4",
+    "@types/stream-buffers": "^3.0.4",
     "@typescript-eslint/eslint-plugin": "^4.28.0",
     "@typescript-eslint/parser": "^4.28.0",
     "eslint": "^7.29.0",

@@ -1,13 +1,31 @@
+/// <reference path="./util/implode-decoder.d.ts" />
+
 import { promises as fs } from 'fs';
 import winston from 'winston';
 import { FirstDifference } from './util/BufferFirstDifference';
 import { UnexpectedValue } from './util/UnexpectedValue';
+import decoder from 'implode-decoder';
+import { WritableStreamBuffer } from 'stream-buffers';
 
 const compressedBlocks: Buffer[] = [];
 const decompressedBlocks: string[] = [];
 
 function decodeBlock(block: Buffer, expectedLength: number): string {
-  return '';
+  const d = decoder();
+
+  const res = new WritableStreamBuffer({ initialSize: expectedLength });
+
+  d.pipe(res);
+
+  d.end(block);
+
+  const ret = res.getContentsAsString('ascii');
+
+  if (!ret) throw new Error('Decoder returned null');
+
+  if (ret.length !== expectedLength) throw new Error('Decoder returned wrong length');
+
+  return ret;
 }
 
 function analyzeSection(compressed: Buffer, section: number, logger: winston.Logger): void {
