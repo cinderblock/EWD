@@ -25,6 +25,11 @@ export async function main() {
     ],
   });
 
+  if (!files) {
+    logger.error('No files specified');
+    return;
+  }
+
   if (concurrent) await Promise.all(files.map(f => decode(f, logger)));
   else
     for (const f of files) {
