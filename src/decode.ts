@@ -3,7 +3,40 @@ import winston from 'winston';
 import { FirstDifference } from './util/BufferFirstDifference';
 import { UnexpectedValue } from './util/UnexpectedValue';
 
-const results: Buffer[] = [];
+const compressedBlocks: Buffer[] = [];
+const decompressedBlocks: string[] = [];
+
+function decodeBlock(block: Buffer, expectedLength: number): string {
+  return '';
+}
+
+function analyzeSection(compressed: Buffer, section: number, logger: winston.Logger): void {
+  return;
+
+  if (section === 0) {
+    for (let result in compressedBlocks) {
+      const diff = FirstDifference(compressedBlocks[result], compressed);
+      logger.verbose(`Difference from #${result} at: ${diff ?? 'None!'}`);
+    }
+
+    compressedBlocks.push(compressed);
+    logger.info('pushed' + compressedBlocks.length);
+  }
+
+  const header = Buffer.allocUnsafe(8);
+
+  header.writeUInt32LE(length, 0);
+  header.writeUInt32LE(compressed.length, 4);
+
+  const full = Buffer.concat([header, compressed]);
+
+  const size = section === 0 ? 20 : 160;
+
+  logger.verbose(compressed.slice(0, size).toString('hex'));
+  if (!section) logger.verbose(compressed.slice(0, size).toString());
+
+  if (!section) logger.verbose('Matches: ' + compressed.slice(0, 103).toString('hex'));
+}
 
 export async function decode(filename: string, logger: winston.Logger) {
   if (!filename) throw new Error('No filename provided');
@@ -74,45 +107,28 @@ export async function decode(filename: string, logger: winston.Logger) {
 
     logger.verbose(`Full size: ${finalLength}`);
 
-    let i = 0;
+    let section = -1;
 
-    let bytesRead = 0;
+    let decompressedBytesRead = 0;
 
-    while (bytesRead < finalLength) {
+    while (decompressedBytesRead < finalLength) {
+      section++;
       const length = await readNumber(4);
       const blockSize = await readNumber(4);
 
-      logger.verbose(`Section #${i} read ${blockSize} bytes, decompresses to ${length}`);
+      logger.verbose(`Section #${section} read ${blockSize} bytes, decompresses to ${length}`);
 
-      const buffer = await read(blockSize);
+      const compressedData = await read(blockSize);
 
-      bytesRead += length;
+      decompressedBytesRead += length;
 
-      if (!i) {
-        for (let result in results) {
-          const diff = FirstDifference(results[result], buffer);
-          logger.verbose(`Difference from #${result} at: ${diff ?? 'None!'}`);
-        }
+      compressedBlocks.push(compressedData);
 
-        results.push(buffer);
-        logger.info('pushed' + results.length);
-      }
+      const decodedBlock = decodeBlock(compressedData, length);
 
-      const header = Buffer.allocUnsafe(8);
+      decompressedBlocks.push(decodedBlock);
 
-      header.writeUInt32LE(length, 0);
-      header.writeUInt32LE(blockSize, 4);
-
-      const full = Buffer.concat([header, buffer]);
-
-      const size = i ? 20 : 160;
-
-      logger.verbose(buffer.slice(0, size).toString('hex'));
-      if (!i) logger.verbose(buffer.slice(0, size).toString());
-
-      if (!i) logger.verbose('Matches: ' + buffer.slice(0, 103).toString('hex'));
-
-      i++;
+      analyzeSection(compressedData, section, logger);
     }
   } catch (e) {
     throw e;
