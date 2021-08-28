@@ -5,16 +5,12 @@ import commandLineArgs from 'command-line-args';
 export async function main() {
   const filename = process.argv[process.argv.length - 1];
 
-  const {
-    file: files,
-    verbose,
-    concurrent,
-  } = commandLineArgs([
+  const { files, verbose, concurrent } = commandLineArgs([
     { name: 'verbose', alias: 'v', type: Boolean },
     { name: 'concurrent', alias: 'c', type: Boolean },
-    { name: 'file', type: String, multiple: true, defaultOption: true },
+    { name: 'files', type: String, multiple: true, defaultOption: true },
   ]) as {
-    file: string[];
+    files: string[];
     verbose: boolean;
     concurrent: boolean;
   };
