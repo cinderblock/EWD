@@ -102,6 +102,14 @@ declare module 'node-pkware' {
     stats: {
       chunkCounter: number;
     };
+    compressionType: CompressionType;
+    dictionarySizeBits: DictionarySizeBits;
+    bitBuffer: number;
+    dictionarySizeMask: number;
+    asciiTable2C34: number[];
+    asciiTable2D34: number[];
+    asciiTable2E34: number[];
+    asciiTable2EB4: number[];
   };
 
   export declare function explode({
