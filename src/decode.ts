@@ -35,11 +35,12 @@ async function decodeBlock(block: Buffer, expectedLength: number): Promise<strin
   if (ret.length !== expectedLength)
     throw new Error(`Decoder returned wrong length. Expected: ${expectedLength}. Got: ${ret.length}.`);
 
-  console.log('ret:', ret.substring(retNew.length - 100, retNew.length));
-  console.log('New:', retNew.substring(retNew.length - 100));
+  if (retNew.length !== expectedLength) {
+    console.log('ret:', ret.substring(retNew.length - 100, retNew.length));
+    console.log('New:', retNew.substring(retNew.length - 100));
 
-  if (retNew.length !== expectedLength)
-    throw new Error(`Decoder New returned wrong length. Expected: ${expectedLength}. Got: ${retNew.length}.`);
+    throw new Error(`New Decoder returned wrong length. Expected: ${expectedLength}. Got: ${retNew.length}.`);
+  }
 
   return ret;
 }
