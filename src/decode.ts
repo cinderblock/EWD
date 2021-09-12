@@ -153,4 +153,6 @@ export async function decode(filename: string, logger: winston.Logger) {
   } finally {
     await file.close();
   }
+
+  logger.verbose(`Finished reading file: ${filename}`);
 }

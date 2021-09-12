@@ -36,6 +36,8 @@ export async function main() {
       await decode(f, logger);
     }
   }
+
+  logger.info('Done');
 }
 
 if (require.main === module) {
