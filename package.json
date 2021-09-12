@@ -17,6 +17,7 @@
     "command-line-args": "^5.1.1",
     "implode-decoder": "^1.0.1",
     "node": "^16.3.0",
+    "node-pkware": "^1.0.0-beta.1",
     "stream-buffers": "^3.0.2",
     "winston": "^3.3.3"
   },

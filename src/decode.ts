@@ -1,29 +1,45 @@
 /// <reference path="./util/implode-decoder.d.ts" />
+/// <reference path="./util/node-pkware.d.ts" />
 
 import { promises as fs } from 'fs';
 import winston from 'winston';
 import { FirstDifference } from './util/BufferFirstDifference';
 import { UnexpectedValue } from './util/UnexpectedValue';
 import decoder from 'implode-decoder';
+import { decompress, constants } from 'node-pkware';
 import { WritableStreamBuffer } from 'stream-buffers';
+import { promisify } from 'util';
 
 const compressedBlocks: Buffer[] = [];
 const decompressedBlocks: string[] = [];
 
-function decodeBlock(block: Buffer, expectedLength: number): string {
+async function decodeBlock(block: Buffer, expectedLength: number): Promise<string> {
   const d = decoder();
 
   const res = new WritableStreamBuffer({ initialSize: expectedLength });
-
   d.pipe(res);
-
   d.end(block);
 
+  const newDecoder = promisify(decompress({ outputBufferSize: expectedLength, inputBufferSize: block.length }));
+
+  const resNew = new WritableStreamBuffer({ initialSize: expectedLength });
+  resNew.write(await newDecoder(block, 'binary'));
+  // resNew.end(await newDecoder(Buffer.from([]), 'binary'));
+
   const ret = res.getContentsAsString('ascii');
+  const retNew = resNew.getContentsAsString('ascii');
 
   if (!ret) throw new Error('Decoder returned null');
+  if (!retNew) throw new Error('Decoder returned null');
 
-  if (ret.length !== expectedLength) throw new Error('Decoder returned wrong length');
+  if (ret.length !== expectedLength)
+    throw new Error(`Decoder returned wrong length. Expected: ${expectedLength}. Got: ${ret.length}.`);
+
+  console.log('ret:', ret.substring(retNew.length - 100, retNew.length));
+  console.log('New:', retNew.substring(retNew.length - 100));
+
+  if (retNew.length !== expectedLength)
+    throw new Error(`Decoder New returned wrong length. Expected: ${expectedLength}. Got: ${retNew.length}.`);
 
   return ret;
 }
@@ -144,7 +160,7 @@ export async function decode(filename: string, logger: winston.Logger) {
 
       const decodedBlock = decodeBlock(compressedData, length);
 
-      decompressedBlocks.push(decodedBlock);
+      decompressedBlocks.push(await decodedBlock);
 
       analyzeSection(compressedData, section, logger);
     }
