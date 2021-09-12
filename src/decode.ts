@@ -20,7 +20,7 @@ async function decodeBlock(block: Buffer, expectedLength: number): Promise<strin
   d.pipe(res);
   d.end(block);
 
-  const newDecoder = promisify(decompress({ outputBufferSize: expectedLength, inputBufferSize: block.length }));
+  const newDecoder = decompress({ debug: true, outputBufferSize: expectedLength, inputBufferSize: block.length });
 
   const resNew = new WritableStreamBuffer({ initialSize: expectedLength });
   resNew.write(await newDecoder(block, 'binary'));
