@@ -3,8 +3,6 @@ import { decode } from './decode';
 import commandLineArgs from 'command-line-args';
 
 export async function main() {
-  const filename = process.argv[process.argv.length - 1];
-
   const { files, verbose, concurrent } = commandLineArgs([
     { name: 'verbose', alias: 'v', type: Boolean },
     { name: 'concurrent', alias: 'c', type: Boolean },
@@ -30,12 +28,16 @@ export async function main() {
     return;
   }
 
-  if (concurrent) await Promise.all(files.map(f => decode(f, logger)));
-  else
+  if (concurrent) {
+    await Promise.all(files.map(f => decode(f, logger)));
+  } else {
     for (const f of files) {
       logger.info(`Next file: ${f}`);
       await decode(f, logger);
     }
+  }
+
+  logger.info('Done');
 }
 
 if (require.main === module) {
