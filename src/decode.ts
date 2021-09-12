@@ -22,9 +22,19 @@ async function decodeBlock(block: Buffer, expectedLength: number): Promise<strin
 
   const newDecoder = decompress({ debug: true, outputBufferSize: expectedLength, inputBufferSize: block.length });
 
+  const newDecoderPromise = promisify(newDecoder);
+
   const resNew = new WritableStreamBuffer({ initialSize: expectedLength });
-  resNew.write(await newDecoder(block, 'binary'));
-  // resNew.end(await newDecoder(Buffer.from([]), 'binary'));
+  resNew.write(await newDecoderPromise(block, 'binary'));
+
+  resNew.end(
+    await new Promise<Buffer>((resolve, reject) => {
+      newDecoder._state.onInputFinished((err, data) => {
+        if (err) reject(err);
+        else resolve(data);
+      });
+    }),
+  );
 
   const ret = res.getContentsAsString('ascii');
   const retNew = resNew.getContentsAsString('ascii');
