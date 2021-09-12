@@ -16,7 +16,34 @@ declare module 'node-pkware' {
 
   type PrivateState<T> = { _state: T };
 
-  type ExpandingBuffer = unknown;
+  declare class ExpandingBuffer {
+    constructor(numberOfBytes = 0);
+    _heap: Buffer;
+    _startIndex: number;
+    _endIndex: number;
+    _backup: {
+      _startIndex: number;
+      _endIndex: number;
+    };
+    _getActualData(offset = 0): Buffer;
+    size(): number;
+    isEmpty(): boolean;
+    heapSize(): number;
+    append(buffer: Buffer): void;
+    read(offset: number, limit: number): Buffer;
+    // hard delete
+    // removes data from the buffer by copying bytes to lower indices
+    flushStart(numberOfBytes: number): void;
+    flushEnd(numberOfBytes: number): void;
+    // soft delete
+    // removes data from the buffer by moving the startIndex forward
+    dropStart(numberOfBytes: number): void;
+    dropEnd(numberOfBytes: number): void;
+    getHeap(): Buffer;
+    clear(): void;
+    _saveIndices(): void;
+    _restoreIndices(): void;
+  }
 
   // type CompressionType = typeof constants.COMPRESSION_BINARY | typeof constants.COMPRESSION_ASCII;
   export enum CompressionType {
