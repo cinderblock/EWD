@@ -3,8 +3,6 @@ import { decode } from './decode';
 import commandLineArgs from 'command-line-args';
 
 export async function main() {
-  const filename = process.argv[process.argv.length - 1];
-
   const { files, verbose, concurrent } = commandLineArgs([
     { name: 'verbose', alias: 'v', type: Boolean },
     { name: 'concurrent', alias: 'c', type: Boolean },
