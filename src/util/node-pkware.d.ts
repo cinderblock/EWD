@@ -1,6 +1,8 @@
 declare module 'node-pkware' {
   import { Transform, Writable } from 'stream';
 
+  type Callback = (error: Error | null, chunk: Buffer) => void;
+
   type Config = {
     debug?: boolean;
     inputBufferSize?: number;
@@ -39,7 +41,7 @@ declare module 'node-pkware' {
     inputBuffer: ExpandingBuffer;
     outputBuffer: ExpandingBuffer;
     handledFirstTwoBytes: boolean;
-    onInputFinished(callback: (error: Error | null, chunk: Buffer) => void): void;
+    onInputFinished(callback: Callback): void;
     stats: {
       chunkCounter: number;
     };
@@ -67,7 +69,7 @@ declare module 'node-pkware' {
     distPosCodes: number[];
     inputBuffer: ExpandingBuffer;
     outputBuffer: ExpandingBuffer;
-    onInputFinished(callback: (error: Error | null, chunk: Buffer) => void): void;
+    onInputFinished(callback: Callback): void;
     backup(): void;
     restore(): void;
     stats: {
@@ -252,22 +254,14 @@ declare module 'node-pkware' {
   export declare namespace stream {
     function splitAt(index: number): (chunk: Buffer) => null | [Buffer, Buffer, boolean];
 
-    function transformIdentity(): (
-      chunk: Buffer,
-      encoding: unknown,
-      callback: (error: Error | null, chunk: Buffer) => void,
-    ) => void;
-    function transformEmpty(): (
-      chunk: unknown,
-      encoding: unknown,
-      callback: (error: Error | null, chunk: Buffer) => void,
-    ) => void;
+    function transformIdentity(): (chunk: Buffer, encoding: unknown, callback: Callback) => void;
+    function transformEmpty(): (chunk: unknown, encoding: unknown, callback: Callback) => void;
     function through(handler: Exclude<ConstructorParameters<typeof Transform>[0], undefined>['transform']): Transform;
     function transformSplitBy(
       predicate: (chunk: Buffer) => [Buffer, Buffer, boolean],
       leftHandler: QuasiTransformConstructorParameter,
       rightHandler: QuasiTransformConstructorParameter,
-    ): (chunk: Buffer, encoding: string, callback: (error: Error | null, chunk: Buffer) => void) => void;
+    ): (chunk: Buffer, encoding: string, callback: Callback) => void;
     function streamToBuffer(done: (heap: Buffer) => void): Writable;
   }
 }
