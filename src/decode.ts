@@ -1,5 +1,4 @@
 /// <reference path="./util/implode-decoder.d.ts" />
-/// <reference path="./util/node-pkware.d.ts" />
 
 import { promises as fs } from 'fs';
 import winston from 'winston';
