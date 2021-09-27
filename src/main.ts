@@ -37,7 +37,7 @@ export async function main() {
     }
   }
 
-  logger.info('Done');
+  logger.silly('Done');
 }
 
 if (require.main === module) {

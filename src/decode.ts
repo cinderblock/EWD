@@ -1,99 +1,33 @@
-/// <reference path="./util/implode-decoder.d.ts" />
-
 import { promises as fs } from 'fs';
 import winston from 'winston';
-import { FirstDifference } from './util/BufferFirstDifference';
 import { UnexpectedValue } from './util/UnexpectedValue';
-import decoder from 'implode-decoder';
-import { decompress, constants } from 'node-pkware';
-import { WritableStreamBuffer } from 'stream-buffers';
-import { promisify } from 'util';
+import { explode, stream } from 'node-pkware';
+import { Readable } from 'stream';
+const { streamToBuffer, through } = stream;
 
-const compressedBlocks: Buffer[] = [];
-const decompressedBlocks: string[] = [];
-
-async function decodeBlock(block: Buffer, expectedLength: number): Promise<string> {
-  const d = decoder();
-
-  const res = new WritableStreamBuffer({ initialSize: expectedLength });
-  d.pipe(res);
-  d.end(block);
-
-  const newDecoder = decompress({ debug: true, outputBufferSize: expectedLength, inputBufferSize: block.length });
-
-  const newDecoderPromise = promisify(newDecoder);
-
-  const resNew = new WritableStreamBuffer({ initialSize: expectedLength });
-  resNew.write(await newDecoderPromise(block, 'binary'));
-
-  resNew.end(
-    await new Promise<Buffer>((resolve, reject) => {
-      newDecoder._state.onInputFinished((err, data) => {
-        if (err) reject(err);
-        else resolve(data);
-      });
-    }),
+async function decodeBlock(block: Buffer, expectedLength: number): Promise<Buffer> {
+  const ret = await new Promise<Buffer>(resolve =>
+    Readable.from(block)
+      .pipe(through(explode({ inputBufferSize: block.length, outputBufferSize: expectedLength })))
+      .pipe(streamToBuffer(resolve)),
   );
-
-  const ret = res.getContentsAsString('ascii');
-  const retNew = resNew.getContentsAsString('ascii');
-
-  if (!ret) throw new Error('Decoder returned null');
-  if (!retNew) throw new Error('Decoder returned null');
 
   if (ret.length !== expectedLength)
     throw new Error(`Decoder returned wrong length. Expected: ${expectedLength}. Got: ${ret.length}.`);
 
-  if (retNew.length !== expectedLength) {
-    console.log('ret:', ret.substring(retNew.length - 100, retNew.length));
-    console.log('New:', retNew.substring(retNew.length - 100));
-
-    console.log(newDecoder._state);
-
-    throw new Error(`New Decoder returned wrong length. Expected: ${expectedLength}. Got: ${retNew.length}.`);
-  }
-
   return ret;
 }
 
-function analyzeSection(compressed: Buffer, section: number, logger: winston.Logger): void {
-  return;
-
-  if (section === 0) {
-    for (let result in compressedBlocks) {
-      const diff = FirstDifference(compressedBlocks[result], compressed);
-      logger.verbose(`Difference from #${result} at: ${diff ?? 'None!'}`);
-    }
-
-    compressedBlocks.push(compressed);
-    logger.info('pushed' + compressedBlocks.length);
-  }
-
-  const header = Buffer.allocUnsafe(8);
-
-  header.writeUInt32LE(length, 0);
-  header.writeUInt32LE(compressed.length, 4);
-
-  const full = Buffer.concat([header, compressed]);
-
-  const size = section === 0 ? 20 : 160;
-
-  logger.verbose(compressed.slice(0, size).toString('hex'));
-  if (!section) logger.verbose(compressed.slice(0, size).toString());
-
-  if (!section) logger.verbose('Matches: ' + compressed.slice(0, 103).toString('hex'));
-}
-
-export async function decode(filename: string, logger: winston.Logger) {
+export async function decode(filename: string, logger: winston.Logger, outFile = filename + '.xml'): Promise<void> {
   if (!filename) throw new Error('No filename provided');
 
   let expectedHeader: Buffer;
 
   if (filename.endsWith('.ewprj')) {
-    logger.verbose(`Opening EWPRJ: ${filename}`);
+    logger.silly(`Opening EWPRJ: ${filename}`);
     expectedHeader = Buffer.from('CompressedElectronicsWorkbenchXML');
   } else if (filename.endsWith('.ms14')) {
-    logger.verbose(`Opening MultiSIM: ${filename}`);
+    logger.silly(`Opening MultiSIM: ${filename}`);
     expectedHeader = Buffer.from('MSMCompressedElectronicsWorkbenchXML');
   } else {
     throw new Error(`I don't know how to parse: ${filename}`);
@@ -136,51 +70,59 @@ export async function decode(filename: string, logger: winston.Logger) {
     return buffer.readUIntLE(0, size);
   }
 
+  let written = 0;
+
   try {
-    let header = await read(expectedHeader.length);
+    logger.silly(`Opening ${outFile} for output`);
+    const outputFile = await fs.open(outFile, 'w');
 
-    logger.verbose('Read header successfully');
+    try {
+      let header = await read(expectedHeader.length);
 
-    if (!header.equals(expectedHeader)) {
-      throw new UnexpectedValue('File header does not match', expectedHeader, header);
-    }
+      logger.silly('Read header successfully');
 
-    logger.verbose('Header matches as expected');
+      if (!header.equals(expectedHeader)) {
+        throw new UnexpectedValue('File header does not match', expectedHeader, header);
+      }
 
-    const finalLength = await readNumber(8);
+      logger.silly('Header matches as expected');
 
-    if (typeof finalLength == 'bigint') throw new Error('Cannot handle files this large');
+      const finalLength = await readNumber(8);
 
-    logger.verbose(`Full size: ${finalLength}`);
+      if (typeof finalLength == 'bigint') throw new Error('Cannot handle files this large');
 
-    let section = -1;
+      logger.silly(`Full size: ${finalLength}`);
 
-    let decompressedBytesRead = 0;
+      let section = -1;
 
-    while (decompressedBytesRead < finalLength) {
-      section++;
-      const length = await readNumber(4);
-      const blockSize = await readNumber(4);
+      let decompressedBytesRead = 0;
 
-      logger.verbose(`Section #${section} read ${blockSize} bytes, decompresses to ${length}`);
+      while (decompressedBytesRead < finalLength) {
+        section++;
+        const length = await readNumber(4);
+        const blockSize = await readNumber(4);
 
-      const compressedData = await read(blockSize);
+        logger.silly(`Section #${section} read ${blockSize} bytes, decompresses to ${length}`);
 
-      decompressedBytesRead += length;
+        const compressedData = await read(blockSize);
 
-      compressedBlocks.push(compressedData);
+        decompressedBytesRead += length;
 
-      const decodedBlock = decodeBlock(compressedData, length);
+        const decodedBlock = await decodeBlock(compressedData, length);
 
-      decompressedBlocks.push(await decodedBlock);
+        written += (await outputFile.write(decodedBlock)).bytesWritten;
+      }
 
-      analyzeSection(compressedData, section, logger);
+      await Promise.all([outputFile.close(), file.close()]);
+
+      logger.verbose(`Wrote ${written} bytes to ${outFile}`);
+      logger.silly(`Finished reading file: ${filename}`);
+    } catch (e) {
+      await outputFile.close();
+      throw e;
     }
   } catch (e) {
-    throw e;
-  } finally {
     await file.close();
+    throw e;
   }
-
-  logger.verbose(`Finished reading file: ${filename}`);
 }
