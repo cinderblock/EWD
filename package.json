@@ -1,13 +1,17 @@
 {
   "name": "electronics-workbench-decoder",
   "version": "0.0.0",
-  "description": "Scripts to decode compressed EWB files",
+  "description": "Decode (ewd) and encode (ewe) compressed Electronics Workbench / Multisim / Ultiboard files",
   "author": "Cameron Tacklind <cameron@tacklind.com>",
   "license": "ISC",
   "main": "decode",
   "scripts": {
-    "start": "ts-node src/main.ts",
-    "dev": "ts-node-dev --rs --respawn src/main.ts --"
+    "start": "ts-node src/ewd.ts",
+    "dev": "ts-node-dev --rs --respawn src/ewd.ts --",
+    "ewd": "ts-node src/ewd.ts",
+    "ewe": "ts-node src/ewe.ts",
+    "dev:ewd": "ts-node-dev --rs --respawn src/ewd.ts --",
+    "dev:ewe": "ts-node-dev --rs --respawn src/ewe.ts --"
   },
   "engines": {
     "node": ">=8.0.0",
