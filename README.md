@@ -13,14 +13,16 @@ big files into 900 000-decompressed-byte sections; `ewe` mirrors that.
 
 ## Install
 
+Requires [bun](https://bun.sh) (≥ 1.0).
+
 ```bash
-npm i
+bun install
 ```
 
 ## Decode
 
 ```bash
-npm run ewd -- --verbose ./samples/Temp.ewprj ./samples/Design1.ms14
+bun run ewd --verbose ./samples/Temp.ewprj ./samples/Design1.ms14
 ```
 
 For each input, writes `<filename>.xml` next to it.
@@ -34,9 +36,9 @@ Options:
 ## Encode
 
 ```bash
-npm run ewe -- --verbose ./samples/Temp.ewprj.xml
+bun run ewe --verbose ./samples/Temp.ewprj.xml
 # or with explicit output:
-npm run ewe -- --output ./out.ewprj ./samples/Temp.ewprj.xml
+bun run ewe --output ./out.ewprj ./samples/Temp.ewprj.xml
 ```
 
 By default, strips a trailing `.xml` from each input to derive the output
@@ -59,11 +61,21 @@ still valid: a decode/encode/decode round-trip on every sample tested
 produces byte-identical XML, and the resulting files are accepted by
 `ewd`. Improving compression density is a `node-pkware` problem.
 
+## Tests
+
+```bash
+bun test
+```
+
+Covers unit tests for the encoder's filename helpers and round-trip
+integration tests (tiny `.ewprj`, tiny `.ms14`, multi-block payload that
+spans more than one PKWare section, and an empty payload).
+
 ## Development
 
 ```bash
-npm run dev:ewd -- --verbose ./samples/Temp.ewprj
-npm run dev:ewe -- --verbose ./samples/Temp.ewprj.xml
+bun run dev:ewd --verbose ./samples/Temp.ewprj
+bun run dev:ewe --verbose ./samples/Temp.ewprj.xml
 ```
 
-Both use `ts-node-dev` for fast reload.
+Both use `bun --watch` for fast reload on source changes.

@@ -25,7 +25,7 @@ function compressBlock(block: Buffer): Promise<Buffer> {
   });
 }
 
-function headerFor(targetFilename: string): Buffer {
+export function headerFor(targetFilename: string): Buffer {
   if (targetFilename.endsWith('.ewprj')) {
     return Buffer.from('CompressedElectronicsWorkbenchXML');
   }
@@ -35,7 +35,7 @@ function headerFor(targetFilename: string): Buffer {
   throw new Error(`I don't know what header to use for: ${targetFilename}`);
 }
 
-function inferOutFile(inFile: string): string {
+export function inferOutFile(inFile: string): string {
   if (inFile.endsWith('.xml')) return inFile.slice(0, -'.xml'.length);
   throw new Error(`Cannot infer output filename from ${inFile}, pass --output`);
 }
