@@ -78,6 +78,13 @@ export async function decode(filename: string, logger: winston.Logger, outFile =
         );
       }
 
+      if (format.kind !== 'compressed-xml') {
+        throw new Error(
+          `This file is "${format.label}" (kind=${format.kind}); decode() only handles compressed-xml. ` +
+            `Dispatch through ewd.ts which routes to the correct decoder for each kind.`,
+        );
+      }
+
       // Rewind past any bytes we read beyond the actual header length.
       pos -= MAX_HEADER_LENGTH - format.header.length;
       logger.silly(`Detected format: ${format.label}`);

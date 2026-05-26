@@ -43,7 +43,7 @@ export function resolveFormat(targetFilename: string, override?: EwbFormat): Ewb
 
 /** Backward-compatible helper: returns the magic header bytes for a target filename. */
 export function headerFor(targetFilename: string): Buffer {
-  return Buffer.from(resolveFormat(targetFilename).header, 'ascii');
+  return Buffer.from(resolveFormat(targetFilename).header, 'latin1');
 }
 
 export function inferOutFile(inFile: string): string {
@@ -68,7 +68,13 @@ export async function encode(inFile: string, logger: winston.Logger, options: En
   if (blockSize <= 0) throw new RangeError('blockSize must be > 0');
 
   const format = resolveFormat(outFile, options.format);
-  const header = Buffer.from(format.header, 'ascii');
+  if (format.kind !== 'compressed-xml') {
+    throw new Error(
+      `Encoding "${format.label}" (kind=${format.kind}) is not implemented yet. ` +
+        `Only compressed-xml containers can be encoded today.`,
+    );
+  }
+  const header = Buffer.from(format.header, 'latin1');
 
   logger.verbose(`Encoding ${inFile} -> ${outFile} as ${format.label}`);
 

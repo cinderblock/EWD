@@ -1,6 +1,26 @@
 import commandLineArgs from 'command-line-args';
 import winston from 'winston';
 import { decode } from './decode';
+import { decodeMdb } from './decodeMdb';
+import { detectFileFormat, knownFormatsList } from './formats';
+
+async function decodeFile(file: string, logger: winston.Logger): Promise<void> {
+  const format = await detectFileFormat(file);
+  if (!format) {
+    throw new Error(`Could not detect format of "${file}". Known formats: ${knownFormatsList()}`);
+  }
+
+  logger.silly(`Detected ${format.label} (${format.key}, kind=${format.kind})`);
+
+  switch (format.kind) {
+    case 'compressed-xml':
+      await decode(file, logger);
+      return;
+    case 'mdb':
+      await decodeMdb(file, logger);
+      return;
+  }
+}
 
 export async function main() {
   const { files, verbose, concurrent } = commandLineArgs([
@@ -30,11 +50,11 @@ export async function main() {
   }
 
   if (concurrent) {
-    await Promise.all(files.map(f => decode(f, logger)));
+    await Promise.all(files.map(f => decodeFile(f, logger)));
   } else {
     for (const f of files) {
       logger.info(`Next file: ${f}`);
-      await decode(f, logger);
+      await decodeFile(f, logger);
     }
   }
 }
