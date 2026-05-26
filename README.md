@@ -2,14 +2,35 @@
 
 Two CLIs:
 
-- **`ewd`** — decode an EWB project (`.ewprj`, `.ms14`) into its underlying XML.
-- **`ewe`** — encode XML back into a `.ewprj`/`.ms14` the original software can re-open.
+- **`ewd`** — decode an EWB project into its underlying XML.
+- **`ewe`** — encode XML back into a compressed EWB file the original software can re-open.
 
-The container is a small header (`CompressedElectronicsWorkbenchXML` or
-`MSMCompressedElectronicsWorkbenchXML`), then a 64-bit little-endian total
-decompressed length, then a sequence of `(decompressed_length: u32, compressed_length: u32, pkware_implode_block)` sections. Compression is
+## Supported formats
+
+| Key        | Extension(s)          | Header                                  |
+| ---------- | --------------------- | --------------------------------------- |
+| `ewprj`    | `.ewprj`              | `CompressedElectronicsWorkbenchXML`     |
+| `multisim` | `.ms10` … `.ms19`     | `MSMCompressedElectronicsWorkbenchXML`  |
+
+`ewd` identifies the format by reading the magic bytes at the start of the
+file, so the filename extension can be anything (renamed files, no extension,
+`.dat`, etc. all decode correctly).
+
+`ewe` infers the format from the **output** filename's extension; pass
+`--format <key>` to override for non-standard extensions. Out-of-range
+Multisim versions (e.g. `.ms9` or future `.ms20+`) need an explicit
+`--format multisim`.
+
+The container is a small header, then a 64-bit little-endian total
+decompressed length, then a sequence of `(decompressed_length: u32,
+compressed_length: u32, pkware_implode_block)` sections. Compression is
 PKWare DCL Implode (ASCII literal mode, large dictionary). Multisim chunks
 big files into 900 000-decompressed-byte sections; `ewe` mirrors that.
+
+> Note: the `*.prj` / `*.usr` / `*.ldb` files that ship as part of NI's
+> "Electronics Workbench Database" are Microsoft Access (Jet) databases,
+> not the compressed-XML container described here. They aren't handled by
+> `ewd` / `ewe`.
 
 ## Install
 
@@ -39,16 +60,19 @@ Options:
 bun run ewe --verbose ./samples/Temp.ewprj.xml
 # or with explicit output:
 bun run ewe --output ./out.ewprj ./samples/Temp.ewprj.xml
+# or force a format on a non-standard extension:
+bun run ewe --format multisim --output ./out.dat ./samples/Design1.ms14.xml
 ```
 
 By default, strips a trailing `.xml` from each input to derive the output
-path. Format is inferred from the output extension (`.ewprj` vs `.ms14`).
+path. Format is inferred from the output extension (see the table above).
 
 Options:
 
 - `-v`, `--verbose` — log per-section progress
 - `-c`, `--concurrent` — encode multiple files in parallel
 - `-o`, `--output <path>` — explicit output path (single-input only)
+- `-f`, `--format <key>` — force a format (`ewprj` or `multisim`)
 - positional args — XML files to encode
 
 ### Compression ratio caveat
@@ -67,9 +91,10 @@ produces byte-identical XML, and the resulting files are accepted by
 bun test
 ```
 
-Covers unit tests for the encoder's filename helpers and round-trip
-integration tests (tiny `.ewprj`, tiny `.ms14`, multi-block payload that
-spans more than one PKWare section, and an empty payload).
+Covers the format registry (extension matching, header detection),
+encoder filename helpers, and round-trip integration tests (tiny
+`.ewprj`, tiny `.ms14`, multi-block payload that spans more than one
+PKWare section, and an empty payload).
 
 ## Development
 

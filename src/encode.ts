@@ -2,6 +2,7 @@ import { promises as fs } from 'node:fs';
 import { Readable } from 'node:stream';
 import { constants, implode, stream } from 'node-pkware';
 import type winston from 'winston';
+import { type EwbFormat, formatForExtension, knownFormatsList } from './formats';
 
 const { COMPRESSION_ASCII, DICTIONARY_SIZE_LARGE } = constants;
 const { streamToBuffer, through } = stream;
@@ -25,14 +26,24 @@ function compressBlock(block: Buffer): Promise<Buffer> {
   });
 }
 
+/**
+ * Resolve the target format. Prefers an explicit `format` override; falls back
+ * to inferring from the output filename's extension.
+ */
+export function resolveFormat(targetFilename: string, override?: EwbFormat): EwbFormat {
+  if (override) return override;
+  const inferred = formatForExtension(targetFilename);
+  if (!inferred) {
+    throw new Error(
+      `Cannot infer format for "${targetFilename}". Pass an explicit format. Known: ${knownFormatsList()}.`,
+    );
+  }
+  return inferred;
+}
+
+/** Backward-compatible helper: returns the magic header bytes for a target filename. */
 export function headerFor(targetFilename: string): Buffer {
-  if (targetFilename.endsWith('.ewprj')) {
-    return Buffer.from('CompressedElectronicsWorkbenchXML');
-  }
-  if (targetFilename.endsWith('.ms14')) {
-    return Buffer.from('MSMCompressedElectronicsWorkbenchXML');
-  }
-  throw new Error(`I don't know what header to use for: ${targetFilename}`);
+  return Buffer.from(resolveFormat(targetFilename).header, 'ascii');
 }
 
 export function inferOutFile(inFile: string): string {
@@ -40,18 +51,26 @@ export function inferOutFile(inFile: string): string {
   throw new Error(`Cannot infer output filename from ${inFile}, pass --output`);
 }
 
-export async function encode(
-  inFile: string,
-  logger: winston.Logger,
-  outFile = inferOutFile(inFile),
-  blockSize = DEFAULT_BLOCK_SIZE,
-): Promise<void> {
+export interface EncodeOptions {
+  /** Output filename. Defaults to stripping a trailing `.xml` from `inFile`. */
+  outFile?: string;
+  /** Decompressed bytes per section. Defaults to `DEFAULT_BLOCK_SIZE`. */
+  blockSize?: number;
+  /** Force a specific output format. Overrides extension-based inference. */
+  format?: EwbFormat;
+}
+
+export async function encode(inFile: string, logger: winston.Logger, options: EncodeOptions = {}): Promise<void> {
   if (!inFile) throw new Error('No input filename provided');
+
+  const outFile = options.outFile ?? inferOutFile(inFile);
+  const blockSize = options.blockSize ?? DEFAULT_BLOCK_SIZE;
   if (blockSize <= 0) throw new RangeError('blockSize must be > 0');
 
-  const header = headerFor(outFile);
+  const format = resolveFormat(outFile, options.format);
+  const header = Buffer.from(format.header, 'ascii');
 
-  logger.verbose(`Encoding ${inFile} -> ${outFile}`);
+  logger.verbose(`Encoding ${inFile} -> ${outFile} as ${format.label}`);
 
   const xml = await fs.readFile(inFile);
   const totalLength = xml.length;

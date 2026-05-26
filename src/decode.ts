@@ -2,6 +2,7 @@ import { promises as fs } from 'node:fs';
 import { Readable } from 'node:stream';
 import { explode, stream } from 'node-pkware';
 import type winston from 'winston';
+import { detectFormatByHeader, knownFormatsList, MAX_HEADER_LENGTH } from './formats';
 import { UnexpectedValue } from './util/UnexpectedValue';
 
 const { streamToBuffer, through } = stream;
@@ -21,18 +22,6 @@ async function decodeBlock(block: Buffer, expectedLength: number): Promise<Buffe
 
 export async function decode(filename: string, logger: winston.Logger, outFile = `${filename}.xml`): Promise<void> {
   if (!filename) throw new Error('No filename provided');
-
-  let expectedHeader: Buffer;
-
-  if (filename.endsWith('.ewprj')) {
-    logger.silly(`Opening EWPRJ: ${filename}`);
-    expectedHeader = Buffer.from('CompressedElectronicsWorkbenchXML');
-  } else if (filename.endsWith('.ms14')) {
-    logger.silly(`Opening MultiSIM: ${filename}`);
-    expectedHeader = Buffer.from('MSMCompressedElectronicsWorkbenchXML');
-  } else {
-    throw new Error(`I don't know how to parse: ${filename}`);
-  }
 
   const file = await fs.open(filename, 'r');
   let pos = 0;
@@ -78,15 +67,20 @@ export async function decode(filename: string, logger: winston.Logger, outFile =
     const outputFile = await fs.open(outFile, 'w');
 
     try {
-      const header = await read(expectedHeader.length);
+      const headerBuffer = await read(MAX_HEADER_LENGTH);
+      const format = detectFormatByHeader(headerBuffer);
 
-      logger.silly('Read header successfully');
-
-      if (!header.equals(expectedHeader)) {
-        throw new UnexpectedValue('File header does not match', expectedHeader, header);
+      if (!format) {
+        throw new UnexpectedValue(
+          `File header doesn't match any known EW format. Supported: ${knownFormatsList()}`,
+          `one of ${knownFormatsList()}`,
+          headerBuffer.toString('ascii'),
+        );
       }
 
-      logger.silly('Header matches as expected');
+      // Rewind past any bytes we read beyond the actual header length.
+      pos -= MAX_HEADER_LENGTH - format.header.length;
+      logger.silly(`Detected format: ${format.label}`);
 
       const finalLength = await readNumber(8);
 

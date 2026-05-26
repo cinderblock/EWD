@@ -1,16 +1,19 @@
 import commandLineArgs from 'command-line-args';
 import winston from 'winston';
 import { encode } from './encode';
+import { FORMATS, formatByKey, knownFormatsList } from './formats';
 
 export async function main() {
-  const { files, output, verbose, concurrent } = commandLineArgs([
+  const { files, output, format, verbose, concurrent } = commandLineArgs([
     { name: 'verbose', alias: 'v', type: Boolean },
     { name: 'concurrent', alias: 'c', type: Boolean },
     { name: 'output', alias: 'o', type: String },
+    { name: 'format', alias: 'f', type: String },
     { name: 'files', type: String, multiple: true, defaultOption: true },
   ]) as {
     files: string[];
     output?: string;
+    format?: string;
     verbose: boolean;
     concurrent: boolean;
   };
@@ -37,12 +40,26 @@ export async function main() {
     return;
   }
 
+  let resolvedFormat: ReturnType<typeof formatByKey>;
+  if (format) {
+    resolvedFormat = formatByKey(format);
+    if (!resolvedFormat) {
+      logger.error(
+        `Unknown --format "${format}". Known: ${FORMATS.map(f => f.key).join(', ')} (${knownFormatsList()})`,
+      );
+      process.exitCode = 1;
+      return;
+    }
+  }
+
+  const options = { outFile: output, format: resolvedFormat };
+
   if (concurrent) {
-    await Promise.all(files.map(f => encode(f, logger, output)));
+    await Promise.all(files.map(f => encode(f, logger, options)));
   } else {
     for (const f of files) {
       logger.info(`Next file: ${f}`);
-      await encode(f, logger, output);
+      await encode(f, logger, options);
     }
   }
 }
