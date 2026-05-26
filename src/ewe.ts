@@ -1,18 +1,25 @@
 import commandLineArgs from 'command-line-args';
 import winston from 'winston';
 import { encode } from './encode';
+import { encodeMdb } from './encodeMdb';
 import { FORMATS, formatByKey, knownFormatsList } from './formats';
 
+function looksLikeMdbJson(filename: string): boolean {
+  return /\.json$/i.test(filename);
+}
+
 export async function main() {
-  const { files, output, format, verbose, concurrent } = commandLineArgs([
+  const { files, output, source, format, verbose, concurrent } = commandLineArgs([
     { name: 'verbose', alias: 'v', type: Boolean },
     { name: 'concurrent', alias: 'c', type: Boolean },
     { name: 'output', alias: 'o', type: String },
+    { name: 'source', alias: 's', type: String },
     { name: 'format', alias: 'f', type: String },
     { name: 'files', type: String, multiple: true, defaultOption: true },
   ]) as {
     files: string[];
     output?: string;
+    source?: string;
     format?: string;
     verbose: boolean;
     concurrent: boolean;
@@ -40,6 +47,12 @@ export async function main() {
     return;
   }
 
+  if (source && files.length > 1) {
+    logger.error('--source cannot be combined with multiple input files');
+    process.exitCode = 1;
+    return;
+  }
+
   let resolvedFormat: ReturnType<typeof formatByKey>;
   if (format) {
     resolvedFormat = formatByKey(format);
@@ -52,14 +65,24 @@ export async function main() {
     }
   }
 
-  const options = { outFile: output, format: resolvedFormat };
+  async function encodeOne(file: string): Promise<void> {
+    if (looksLikeMdbJson(file)) {
+      const result = await encodeMdb(file, logger, { source, outFile: output });
+      logger.info(`${file} -> ${result.outFile}: ${result.applied.length} applied, ${result.skipped.length} skipped`);
+      for (const s of result.skipped) {
+        logger.warn(`  skipped ${s.change.table}[${s.change.rowIndex}].${s.change.column}: ${s.reason}`);
+      }
+      return;
+    }
+    await encode(file, logger, { outFile: output, format: resolvedFormat });
+  }
 
   if (concurrent) {
-    await Promise.all(files.map(f => encode(f, logger, options)));
+    await Promise.all(files.map(encodeOne));
   } else {
     for (const f of files) {
       logger.info(`Next file: ${f}`);
-      await encode(f, logger, options);
+      await encodeOne(f);
     }
   }
 }
