@@ -113,16 +113,12 @@ export async function decode(filename: string, logger: winston.Logger, outFile =
         written += (await outputFile.write(decodedBlock)).bytesWritten;
       }
 
-      await Promise.all([outputFile.close(), file.close()]);
-
       logger.verbose(`Wrote ${written} bytes to ${outFile}`);
       logger.silly(`Finished reading file: ${filename}`);
-    } catch (e) {
+    } finally {
       await outputFile.close();
-      throw e;
     }
-  } catch (e) {
+  } finally {
     await file.close();
-    throw e;
   }
 }

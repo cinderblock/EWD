@@ -25,6 +25,7 @@ export async function main() {
 
   if (!files) {
     logger.error('No files specified');
+    process.exitCode = 1;
     return;
   }
 
@@ -36,12 +37,11 @@ export async function main() {
       await decode(f, logger);
     }
   }
-
-  logger.silly('Done');
 }
 
 if (require.main === module) {
   main().catch(e => {
-    throw e;
+    console.error(e);
+    process.exitCode = 1;
   });
 }
