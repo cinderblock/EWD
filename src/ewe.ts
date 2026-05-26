@@ -1,5 +1,5 @@
-import winston from 'winston';
 import commandLineArgs from 'command-line-args';
+import winston from 'winston';
 import { encode } from './encode';
 
 export async function main() {

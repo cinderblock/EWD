@@ -1,8 +1,9 @@
-import { promises as fs } from 'fs';
-import winston from 'winston';
-import { UnexpectedValue } from './util/UnexpectedValue';
+import { promises as fs } from 'node:fs';
+import { Readable } from 'node:stream';
 import { explode, stream } from 'node-pkware';
-import { Readable } from 'stream';
+import type winston from 'winston';
+import { UnexpectedValue } from './util/UnexpectedValue';
+
 const { streamToBuffer, through } = stream;
 
 async function decodeBlock(block: Buffer, expectedLength: number): Promise<Buffer> {
@@ -18,7 +19,7 @@ async function decodeBlock(block: Buffer, expectedLength: number): Promise<Buffe
   return ret;
 }
 
-export async function decode(filename: string, logger: winston.Logger, outFile = filename + '.xml'): Promise<void> {
+export async function decode(filename: string, logger: winston.Logger, outFile = `${filename}.xml`): Promise<void> {
   if (!filename) throw new Error('No filename provided');
 
   let expectedHeader: Buffer;
@@ -41,7 +42,7 @@ export async function decode(filename: string, logger: winston.Logger, outFile =
 
     pos += bytesRead;
 
-    if (bytesRead != length) {
+    if (bytesRead !== length) {
       throw new UnexpectedValue('Failed to read as many bytes as we expect', length, bytesRead);
     }
 
@@ -58,7 +59,7 @@ export async function decode(filename: string, logger: winston.Logger, outFile =
   async function readNumber(size: 8): Promise<number | bigint>;
   async function readNumber(size: number) {
     const buffer = await read(size);
-    if ((size == 8 && buffer[6] && buffer[7]) || (size == 7 && buffer[6])) {
+    if ((size === 8 && buffer[6] && buffer[7]) || (size === 7 && buffer[6])) {
       return buffer.readBigUInt64LE();
     }
 
@@ -77,7 +78,7 @@ export async function decode(filename: string, logger: winston.Logger, outFile =
     const outputFile = await fs.open(outFile, 'w');
 
     try {
-      let header = await read(expectedHeader.length);
+      const header = await read(expectedHeader.length);
 
       logger.silly('Read header successfully');
 
@@ -89,7 +90,7 @@ export async function decode(filename: string, logger: winston.Logger, outFile =
 
       const finalLength = await readNumber(8);
 
-      if (typeof finalLength == 'bigint') throw new Error('Cannot handle files this large');
+      if (typeof finalLength === 'bigint') throw new Error('Cannot handle files this large');
 
       logger.silly(`Full size: ${finalLength}`);
 

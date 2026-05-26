@@ -23,4 +23,6 @@ jobs:
 
       - run: bun install --frozen-lockfile
 
+      - run: bun run check
+      - run: bun run typecheck
       - run: bun test

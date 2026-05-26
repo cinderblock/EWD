@@ -1,7 +1,7 @@
-import { promises as fs } from 'fs';
-import winston from 'winston';
+import { promises as fs } from 'node:fs';
+import { Readable } from 'node:stream';
 import { constants, implode, stream } from 'node-pkware';
-import { Readable } from 'stream';
+import type winston from 'winston';
 
 const { COMPRESSION_ASCII, DICTIONARY_SIZE_LARGE } = constants;
 const { streamToBuffer, through } = stream;

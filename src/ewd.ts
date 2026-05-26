@@ -1,6 +1,6 @@
+import commandLineArgs from 'command-line-args';
 import winston from 'winston';
 import { decode } from './decode';
-import commandLineArgs from 'command-line-args';
 
 export async function main() {
   const { files, verbose, concurrent } = commandLineArgs([

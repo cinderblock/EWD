@@ -79,3 +79,14 @@ bun run dev:ewe --verbose ./samples/Temp.ewprj.xml
 ```
 
 Both use `bun --watch` for fast reload on source changes.
+
+## Lint, format, and typecheck
+
+```bash
+bun run check        # biome lint + format check (no changes)
+bun run check:fix    # apply all safe fixes
+bun run format       # format only
+bun run typecheck    # tsc --noEmit
+```
+
+CI on push/PR runs `check`, `typecheck`, and `test` on Ubuntu and Windows.
