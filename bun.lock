@@ -5,7 +5,7 @@
       "name": "electronics-workbench-decoder",
       "dependencies": {
         "command-line-args": "^6.0.2",
-        "node-pkware": "github:cinderblock/node-pkware",
+        "node-pkware": "cinderblock/node-pkware#v5-fix",
         "winston": "^3.19.0",
       },
       "devDependencies": {
@@ -152,11 +152,11 @@
 
     "mdb-reader": ["mdb-reader@3.2.0", "", { "dependencies": { "browserify-aes": "^1.0.0", "create-hash": "^1.0.0", "fast-xml-parser": "^4.0.0 || ^5.0.0", "pako": "^2.0.0" } }, "sha512-ShIlblasXhXGHmbHNztKdEGftALGo9NNrOviHCoSHqhYnAnMjbJSlsfHluCV5BrXpoeYNnaefviRTdik42qOAg=="],
 
-    "minimist": ["minimist@1.2.8", "", {}, "sha512-2yyAR8qBkN3YuheJanUpWC5U3bb5osDywNB8RzDVlDwDHbocAJveqqj1u8+SVD7jkWT4yvsHCpWqqWqAxb0zCA=="],
+    "minimist-lite": ["minimist-lite@2.3.0", "", {}, "sha512-jYjPvcjtLk4W+qNYAS5xb+PkIVsgLLxOI4iX2OsOAMz778t02Os9q6adaTRYSKf2Hq9xSH/lw2wUw1B2DB/gcQ=="],
 
     "ms": ["ms@2.1.3", "", {}, "sha512-6FlzubTLZG3J2a/NVCAleEhjzq5oxgHyaCU9yYXvcLsvoVaHJq/s5xXI6/XXP6tz7R9xAOtHnSO/tXtF3WRTlA=="],
 
-    "node-pkware": ["node-pkware@github:cinderblock/node-pkware#2f3ec55", { "dependencies": { "minimist": "^1.2.5", "ramda": "^0.27.1", "ramda-adjunct": "^2.33.0" }, "bin": { "explode": "bin/explode.js", "implode": "bin/implode.js" } }, "cinderblock-node-pkware-2f3ec55"],
+    "node-pkware": ["node-pkware@github:cinderblock/node-pkware#dacd10b", { "dependencies": { "minimist-lite": "^2.2.1" }, "bin": { "explode": "dist/bin/explode.js", "implode": "dist/bin/implode.js" } }, "cinderblock-node-pkware-dacd10b"],
 
     "one-time": ["one-time@1.0.0", "", { "dependencies": { "fn.name": "1.x.x" } }, "sha512-5DXOiRKwuSEcQ/l0kGCF6Q3jcADFv5tSmRaJck/OqkVFcOzutB134KRSfF0xDrL39MNnqxbHBbUUcjZIhTgb2g=="],
 
@@ -167,10 +167,6 @@
     "possible-typed-array-names": ["possible-typed-array-names@1.1.0", "", {}, "sha512-/+5VFTchJDoVj3bhoqi6UeymcD00DAwb1nJwamzPvHEszJ4FpF6SNNbUbOS8yI56qHzdV8eK0qEfOSiodkTdxg=="],
 
     "process-nextick-args": ["process-nextick-args@2.0.1", "", {}, "sha512-3ouUOpQhtgrbOa17J7+uxOTpITYWaGP7/AhoR3+A+/1e9skrzelGi/dXzEYyvbxubEF6Wn2ypscTKiKJFFn1ag=="],
-
-    "ramda": ["ramda@0.27.2", "", {}, "sha512-SbiLPU40JuJniHexQSAgad32hfwd+DRUdwF2PlVuI5RZD0/vahUco7R8vD86J/tcEKKF9vZrUVwgtmGCqlCKyA=="],
-
-    "ramda-adjunct": ["ramda-adjunct@2.36.0", "", { "peerDependencies": { "ramda": ">= 0.19.0 <= 0.27.2" } }, "sha512-8w+/Hx73oByS+vo+BfAPOG3HYL2ay6O5fjrJpR7NFxMoFWksKz6vSOtvjqdfMM6MfAimHizq9tpdI0OD4xbKog=="],
 
     "readable-stream": ["readable-stream@3.6.2", "", { "dependencies": { "inherits": "^2.0.3", "string_decoder": "^1.1.1", "util-deprecate": "^1.0.1" } }, "sha512-9u/sniCrY3D5WdsERHzHE4G2YCXqoG5FTHUiCC4SIbr6XcLZBY05ya9EKjYek9O5xOAwjGq+1JdGBAS7Q9ScoA=="],
 

@@ -23,7 +23,7 @@
   },
   "dependencies": {
     "command-line-args": "^6.0.2",
-    "node-pkware": "github:cinderblock/node-pkware",
+    "node-pkware": "cinderblock/node-pkware#v5-fix",
     "winston": "^3.19.0"
   },
   "devDependencies": {

@@ -182,12 +182,18 @@ untouched at that cell.
 ### Compression ratio caveat
 
 `ewe` uses [`node-pkware`](https://github.com/cinderblock/node-pkware)'s
-`implode` for compression. Its repetition search is currently incomplete
-(see the upstream `TODO: search for a better repetition` log lines), so
-re-encoded files are several times larger than the originals. They are
-still valid: a decode/encode/decode round-trip on every sample tested
-produces byte-identical XML, and the resulting files are accepted by
-`ewd`. Improving compression density is a `node-pkware` problem.
+`implode` for compression. The repetition search isn't quite as
+sophisticated as the original PKWare DCL implementation Multisim itself
+uses — re-encoded files are roughly **2× the size** of the originals
+(e.g. 9 KB `.ewprj` round-trips to 20 KB). The output is still valid
+PKWare DCL Implode: round-trips are byte-identical on every sample
+tested, and the resulting files are accepted by `ewd`.
+
+This is a substantial improvement over the previous baseline (7-10×
+bloat) thanks to fixes in the `v5-fix` branch of the
+`cinderblock/node-pkware` fork — see `plans/jet-in-place-edit.md`
+context and the fork's `v5-fix` branch for the specific bugs that
+were patched.
 
 ## Tests
 

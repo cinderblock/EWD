@@ -1,29 +1,15 @@
 import { promises as fs } from 'node:fs';
-import { Readable } from 'node:stream';
-import { constants, implode, stream } from 'node-pkware';
+import { implode } from 'node-pkware/simple';
 import type winston from 'winston';
 import { type EwbFormat, formatForExtension, knownFormatsList } from './formats';
-
-const { COMPRESSION_ASCII, DICTIONARY_SIZE_LARGE } = constants;
-const { streamToBuffer, through } = stream;
+import { bufferToArrayBuffer } from './util/buffer';
 
 // Decompressed bytes per block. Multisim/Ultiboard ship files chunked at this
 // boundary; matching it keeps the section layout identical to originals.
 export const DEFAULT_BLOCK_SIZE = 900000;
 
-function compressBlock(block: Buffer): Promise<Buffer> {
-  return new Promise<Buffer>((resolve, reject) => {
-    const src = Readable.from(block);
-    const compressor = through(
-      implode(COMPRESSION_ASCII, DICTIONARY_SIZE_LARGE, {
-        inputBufferSize: block.length,
-        outputBufferSize: block.length,
-      }),
-    );
-    src.on('error', reject);
-    compressor.on('error', reject);
-    src.pipe(compressor).pipe(streamToBuffer(resolve));
-  });
+function compressBlock(block: Buffer): Buffer {
+  return Buffer.from(implode(bufferToArrayBuffer(block), 'ascii', 'large'));
 }
 
 /**
@@ -95,7 +81,7 @@ export async function encode(inFile: string, logger: winston.Logger, options: En
       const end = Math.min(offset + blockSize, totalLength);
       const slice = xml.subarray(offset, end);
 
-      const compressed = await compressBlock(slice);
+      const compressed = compressBlock(slice);
 
       logger.silly(`Section #${section}: ${slice.length} bytes -> ${compressed.length} compressed`);
 

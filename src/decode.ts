@@ -1,23 +1,16 @@
 import { promises as fs } from 'node:fs';
-import { Readable } from 'node:stream';
-import { explode, stream } from 'node-pkware';
+import { explode } from 'node-pkware/simple';
 import type winston from 'winston';
 import { detectFormatByHeader, knownFormatsList, MAX_HEADER_LENGTH } from './formats';
+import { bufferToArrayBuffer } from './util/buffer';
 import { UnexpectedValue } from './util/UnexpectedValue';
 
-const { streamToBuffer, through } = stream;
-
-async function decodeBlock(block: Buffer, expectedLength: number): Promise<Buffer> {
-  const ret = await new Promise<Buffer>(resolve =>
-    Readable.from(block)
-      .pipe(through(explode({ inputBufferSize: block.length, outputBufferSize: expectedLength })))
-      .pipe(streamToBuffer(resolve)),
-  );
-
-  if (ret.length !== expectedLength)
-    throw new Error(`Decoder returned wrong length. Expected: ${expectedLength}. Got: ${ret.length}.`);
-
-  return ret;
+function decodeBlock(block: Buffer, expectedLength: number): Buffer {
+  const result = Buffer.from(explode(bufferToArrayBuffer(block)));
+  if (result.length !== expectedLength) {
+    throw new Error(`Decoder returned wrong length. Expected: ${expectedLength}. Got: ${result.length}.`);
+  }
+  return result;
 }
 
 export async function decode(filename: string, logger: winston.Logger, outFile = `${filename}.xml`): Promise<void> {
@@ -110,7 +103,7 @@ export async function decode(filename: string, logger: winston.Logger, outFile =
 
         decompressedBytesRead += length;
 
-        const decodedBlock = await decodeBlock(compressedData, length);
+        const decodedBlock = decodeBlock(compressedData, length);
 
         written += (await outputFile.write(decodedBlock)).bytesWritten;
       }
