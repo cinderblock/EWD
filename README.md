@@ -55,28 +55,50 @@ Dates become ISO 8601 strings; binary blob fields (`ole` columns) become
 `{ "_bytes": "base64", "value": "..." }` envelopes so the data survives a
 JSON round-trip.
 
-**Encode is in-place-edit only.** Writing a valid Jet 3 file from
-scratch would mean reimplementing Access's page/B-tree storage engine,
-which is out of scope. Instead `ewe` patches an existing `.prj`:
+**Encode is a deliberately narrow byte-patch path, not a real Jet writer.**
+Reimplementing Access's storage engine (page splits, B-tree index
+maintenance, free-space tracking, `MSysObjects` invariants) is out of
+scope for this project — `ewd`/`ewe` exist to move data **out** of
+Electronics Workbench, not to clone Microsoft's database engine.
+
+What `ewe` does on an `mdb` input today:
 
 1. You decode with `ewd` to produce `<file>.prj.json`.
 2. You edit the JSON in your text editor (or with a script).
-3. You run `ewe edited.json` and `ewe` diffs the edited JSON against
-   the original `.prj`, then byte-patches each changed cell.
+3. You run `ewe edited.json`. It diffs the edited JSON against the
+   original `.prj`, then for each changed cell where:
+   - the column is `text` or `memo`,
+   - the new value has the **same byte length** as the old,
+   - the old value appears **exactly once** in the file,
 
-Today's limits (each enforced by the encoder, with a clear "skipped"
-report when violated):
+   it overwrites the bytes in place. Anything that violates those
+   constraints is skipped, and `--verbose` prints the reason per cell.
 
-- Only `text` and `memo` columns. Numeric / date / OLE edits are skipped.
-- New value must have the same byte length as the old value. Length
-  changes would require row reflow / free-space accounting (planned).
-- Old value must appear exactly once in the file. If it's ambiguous
-  (collides with another row) or missing, the change is skipped.
+This is enough for the typical vendor / price / MPN editing workflow
+because those values are usually unique and you usually substitute one
+same-length identifier for another. It is **not** a general-purpose
+editor and we don't intend to grow it into one.
 
-These constraints cover the typical vendor / price / MPN editing
-workflow because those values are usually unique and you usually
-substitute one same-length identifier for another. The skipped list
-tells you exactly when they don't.
+### If you want general-purpose `.prj` edit support
+
+Not planned in this repo. The clean way to add it is a separate,
+optional, Windows-only tool that drives Microsoft's own Access engine:
+
+- **ACE OLE DB Provider** (`Microsoft.ACE.OLEDB.12.0` / `16.0`) — free
+  Redistributable from Microsoft, reads & writes both `.mdb` and `.accdb`.
+- **Access ODBC driver** — same engine, ODBC interface. Pair with
+  [`node-odbc`](https://github.com/markdirish/node-odbc) (N-API native
+  addon) and issue plain SQL: `UPDATE SYS_USER_DATA SET USER_DEFINED_7 =
+  ? WHERE Component_ID = ?`. The diff logic we already have for
+  edited-JSON → changed-cells would generate those statements directly.
+- **Jet OLE DB 4.0** — older, **32-bit only**, still works for Jet 3
+  `.mdb` files like NI's `.prj`.
+
+That path requires Windows + a driver install and so deliberately lives
+outside this cross-platform repo's CI. The current byte-patch encode
+covers the vendor/price editing case; for anything harder, route through
+Access (or the ACE driver, or DAO/ADO) instead of expecting `ewe` to
+grow into a full Jet writer.
 
 ## Format detection
 
