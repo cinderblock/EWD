@@ -1,2 +1,4 @@
 node_modules/
 samples/
+dist/
+THIRD-PARTY-LICENSES.md
