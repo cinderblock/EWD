@@ -6,11 +6,11 @@
   "license": "ISC",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/cinderblock/EWD.git"
+    "url": "git+https://github.com/cinderblock/electronics-workbench-decoder.git"
   },
-  "homepage": "https://github.com/cinderblock/EWD#readme",
+  "homepage": "https://github.com/cinderblock/electronics-workbench-decoder#readme",
   "bugs": {
-    "url": "https://github.com/cinderblock/EWD/issues"
+    "url": "https://github.com/cinderblock/electronics-workbench-decoder/issues"
   },
   "keywords": [
     "electronics-workbench",
