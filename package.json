@@ -28,6 +28,17 @@
     "ewd": "dist/ewd.js",
     "ewe": "dist/ewe.js"
   },
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.cjs"
+    },
+    "./package.json": "./package.json"
+  },
   "files": [
     "dist",
     "THIRD-PARTY-LICENSES.md"
@@ -44,7 +55,7 @@
     "check": "biome check",
     "check:fix": "biome check --write",
     "format": "biome format --write",
-    "build": "bun run build.ts",
+    "build": "bun run build.ts && tsc -p tsconfig.build.json",
     "licenses": "bun run scripts/collect-licenses.ts",
     "prepublishOnly": "bun run check && bun run typecheck && bun test && bun run licenses && bun run build"
   },

@@ -26,7 +26,8 @@
 
 import { promises as fs } from 'node:fs';
 import MDBReader from 'mdb-reader';
-import type winston from 'winston';
+import { asBuffer } from './util/buffer';
+import type { Logger } from './util/logger';
 
 export interface ColumnInfo {
   name: string;
@@ -66,8 +67,14 @@ export function normalizeValue(value: unknown): unknown {
   return value;
 }
 
-export function mdbBufferToJson(buffer: Buffer, source: string): MdbJson {
-  const db = new MDBReader(buffer);
+/**
+ * Decode an NI EW component database (Jet 3 / Jet 4) held in memory into a
+ * portable JS object: every table as `{ columns, rows }` with rows as plain
+ * objects. Dates become ISO strings, OLE/binary blobs become base64
+ * envelopes. Pure: no file or console I/O.
+ */
+export function decodeMdbBuffer(input: Uint8Array, source = '<buffer>'): MdbJson {
+  const db = new MDBReader(asBuffer(input));
   const tables: Record<string, TableJson> = {};
 
   for (const name of db.getTableNames()) {
@@ -84,12 +91,12 @@ export function mdbBufferToJson(buffer: Buffer, source: string): MdbJson {
   return { format: 'mdb', source, tables };
 }
 
-export async function decodeMdb(filename: string, logger: winston.Logger, outFile = `${filename}.json`): Promise<void> {
+export async function decodeMdb(filename: string, logger: Logger, outFile = `${filename}.json`): Promise<void> {
   if (!filename) throw new Error('No filename provided');
 
   logger.verbose(`Reading ${filename}`);
   const buf = await fs.readFile(filename);
-  const json = mdbBufferToJson(buf, filename);
+  const json = decodeMdbBuffer(buf, filename);
 
   const tableCount = Object.keys(json.tables).length;
   const rowCount = Object.values(json.tables).reduce((n, t) => n + t.rows.length, 0);

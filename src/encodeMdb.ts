@@ -22,8 +22,8 @@
 
 import { promises as fs } from 'node:fs';
 import MDBReader from 'mdb-reader';
-import type winston from 'winston';
 import { type MdbJson, normalizeValue } from './decodeMdb';
+import type { Logger } from './util/logger';
 
 export interface CellChange {
   table: string;
@@ -142,7 +142,7 @@ export interface EncodeMdbOptions {
 
 export async function encodeMdb(
   editedJsonPath: string,
-  logger: winston.Logger,
+  logger: Logger,
   options: EncodeMdbOptions = {},
 ): Promise<PatchResult> {
   const editedJson = JSON.parse(await fs.readFile(editedJsonPath, 'utf8')) as MdbJson;

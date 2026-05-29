@@ -1,8 +1,8 @@
 import { promises as fs } from 'node:fs';
 import { explode } from 'node-pkware/simple';
-import type winston from 'winston';
-import { detectFormatByHeader, knownFormatsList, MAX_HEADER_LENGTH } from './formats';
-import { bufferToArrayBuffer } from './util/buffer';
+import { detectFormatByHeader, type EwbFormat, knownFormatsList, MAX_HEADER_LENGTH } from './formats';
+import { asBuffer, bufferToArrayBuffer } from './util/buffer';
+import type { Logger } from './util/logger';
 import { UnexpectedValue } from './util/UnexpectedValue';
 
 function decodeBlock(block: Buffer, expectedLength: number): Buffer {
@@ -13,107 +13,82 @@ function decodeBlock(block: Buffer, expectedLength: number): Buffer {
   return result;
 }
 
-export async function decode(filename: string, logger: winston.Logger, outFile = `${filename}.xml`): Promise<void> {
-  if (!filename) throw new Error('No filename provided');
+export interface DecodedXml {
+  /** The detected container format. */
+  format: EwbFormat;
+  /** The decompressed XML bytes. */
+  xml: Buffer;
+}
 
-  const file = await fs.open(filename, 'r');
+/**
+ * Decode a compressed-XML EW container (`.ewprj`, `.ms1x`) held entirely in
+ * memory. Detects the format from the magic header, decompresses every PKWare
+ * section, and returns the concatenated XML. Pure: no file or console I/O.
+ */
+export function decodeBuffer(input: Uint8Array): DecodedXml {
+  const buf = asBuffer(input);
   let pos = 0;
 
-  async function read(length: number) {
-    const { bytesRead, buffer } = await file.read(Buffer.allocUnsafe(length), 0, length, pos);
-
-    pos += bytesRead;
-
-    if (bytesRead !== length) {
-      throw new UnexpectedValue('Failed to read as many bytes as we expect', length, bytesRead);
+  const readBytes = (length: number): Buffer => {
+    if (pos + length > buf.length) {
+      throw new UnexpectedValue('Unexpected end of input', length, buf.length - pos);
     }
+    const slice = buf.subarray(pos, pos + length);
+    pos += length;
+    return slice;
+  };
 
-    return buffer;
+  // Reads a little-endian unsigned integer of `size` bytes (1-8). Values that
+  // wouldn't fit in a JS safe integer (bytes 6/7 set in a 7/8-byte field)
+  // are rejected rather than silently truncated.
+  const readUInt = (size: number): number => {
+    const slice = readBytes(size);
+    if ((size === 8 && (slice[6] || slice[7])) || (size === 7 && slice[6])) {
+      throw new Error('Cannot handle files this large');
+    }
+    // Buffer.readUIntLE handles at most 6 bytes; higher bytes are zero here.
+    return slice.readUIntLE(0, Math.min(size, 6));
+  };
+
+  const header = buf.subarray(0, Math.min(MAX_HEADER_LENGTH, buf.length));
+  const format = detectFormatByHeader(header);
+  if (!format) {
+    throw new UnexpectedValue(
+      `Input doesn't match any known EW format. Supported: ${knownFormatsList()}`,
+      `one of ${knownFormatsList()}`,
+      header.toString('ascii'),
+    );
+  }
+  if (format.kind !== 'compressed-xml') {
+    throw new Error(
+      `Input is "${format.label}" (kind=${format.kind}); decodeBuffer only handles compressed-xml. ` +
+        `Use decodeMdbBuffer for ${format.kind} containers.`,
+    );
   }
 
-  async function readNumber(size: 1): Promise<number>;
-  async function readNumber(size: 2): Promise<number>;
-  async function readNumber(size: 3): Promise<number>;
-  async function readNumber(size: 4): Promise<number>;
-  async function readNumber(size: 5): Promise<number>;
-  async function readNumber(size: 6): Promise<number>;
-  async function readNumber(size: 7): Promise<number | bigint>;
-  async function readNumber(size: 8): Promise<number | bigint>;
-  async function readNumber(size: number) {
-    const buffer = await read(size);
-    if ((size === 8 && buffer[6] && buffer[7]) || (size === 7 && buffer[6])) {
-      return buffer.readBigUInt64LE();
-    }
+  pos = format.header.length;
+  const finalLength = readUInt(8);
 
-    if (size > 8) throw new RangeError('Cannot handle size > 8');
-
-    // Buffer.readUIntLE() can only handle number up to 6 bytes
-    if (size >= 6) size = 6;
-
-    return buffer.readUIntLE(0, size);
+  const blocks: Buffer[] = [];
+  let decompressed = 0;
+  while (decompressed < finalLength) {
+    const length = readUInt(4);
+    const blockSize = readUInt(4);
+    const compressed = readBytes(blockSize);
+    blocks.push(decodeBlock(compressed, length));
+    decompressed += length;
   }
 
-  let written = 0;
+  return { format, xml: Buffer.concat(blocks) };
+}
 
-  try {
-    logger.silly(`Opening ${outFile} for output`);
-    const outputFile = await fs.open(outFile, 'w');
+export async function decode(filename: string, logger: Logger, outFile = `${filename}.xml`): Promise<void> {
+  if (!filename) throw new Error('No filename provided');
 
-    try {
-      const headerBuffer = await read(MAX_HEADER_LENGTH);
-      const format = detectFormatByHeader(headerBuffer);
+  logger.silly(`Reading ${filename}`);
+  const { format, xml } = decodeBuffer(await fs.readFile(filename));
+  logger.silly(`Detected format: ${format.label}`);
 
-      if (!format) {
-        throw new UnexpectedValue(
-          `File header doesn't match any known EW format. Supported: ${knownFormatsList()}`,
-          `one of ${knownFormatsList()}`,
-          headerBuffer.toString('ascii'),
-        );
-      }
-
-      if (format.kind !== 'compressed-xml') {
-        throw new Error(
-          `This file is "${format.label}" (kind=${format.kind}); decode() only handles compressed-xml. ` +
-            `Dispatch through ewd.ts which routes to the correct decoder for each kind.`,
-        );
-      }
-
-      // Rewind past any bytes we read beyond the actual header length.
-      pos -= MAX_HEADER_LENGTH - format.header.length;
-      logger.silly(`Detected format: ${format.label}`);
-
-      const finalLength = await readNumber(8);
-
-      if (typeof finalLength === 'bigint') throw new Error('Cannot handle files this large');
-
-      logger.silly(`Full size: ${finalLength}`);
-
-      let section = -1;
-
-      let decompressedBytesRead = 0;
-
-      while (decompressedBytesRead < finalLength) {
-        section++;
-        const length = await readNumber(4);
-        const blockSize = await readNumber(4);
-
-        logger.silly(`Section #${section} read ${blockSize} bytes, decompresses to ${length}`);
-
-        const compressedData = await read(blockSize);
-
-        decompressedBytesRead += length;
-
-        const decodedBlock = decodeBlock(compressedData, length);
-
-        written += (await outputFile.write(decodedBlock)).bytesWritten;
-      }
-
-      logger.verbose(`Wrote ${written} bytes to ${outFile}`);
-      logger.silly(`Finished reading file: ${filename}`);
-    } finally {
-      await outputFile.close();
-    }
-  } finally {
-    await file.close();
-  }
+  await fs.writeFile(outFile, xml);
+  logger.verbose(`Wrote ${xml.length} bytes to ${outFile}`);
 }

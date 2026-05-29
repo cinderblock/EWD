@@ -209,6 +209,43 @@ bloat) thanks to fixes in the `v5-fix` branch of the
 context and the fork's `v5-fix` branch for the specific bugs that
 were patched.
 
+## Programmatic API
+
+The package also ships a library API (ESM + CJS, with TypeScript types) — the
+same functions the CLIs are built on.
+
+```ts
+import {
+  decodeFile,
+  decodeBuffer,
+  encodeBuffer,
+  decodeMdbBuffer,
+  formatByKey,
+} from 'electronics-workbench-decoder';
+
+// Filename → decoded JS values (format detected from the file's magic bytes)
+const result = await decodeFile('Design1.ms14');
+if (result.kind === 'compressed-xml') {
+  console.log(result.xml.toString()); // the decoded XML
+} else {
+  console.log(result.data.tables.SYS_COMPONENT.rows); // Jet DB as a JS object
+}
+
+// Buffer in, buffer out — no file I/O
+const { xml } = decodeBuffer(ewprjBytes);
+const ewprj = encodeBuffer(xml, formatByKey('ewprj')!);
+const db = decodeMdbBuffer(prjBytes); // → { format, source, tables: {...} }
+```
+
+Exposed: `decodeFile`, `decodeBuffer`, `encodeBuffer`, `decodeMdbBuffer`, the
+format registry (`FORMATS`, `formatByKey`, `formatForExtension`,
+`detectFormatByHeader`, `detectFileFormat`), and the supporting types
+(`EwbFormat`, `MdbJson`, `DecodeResult`, `DecodedXml`, …).
+
+Decoding covers every supported format. Encoding via the API covers the
+compressed-xml containers (`encodeBuffer`); `.prj` in-place editing remains
+CLI-only (`ewe`).
+
 ## Tests
 
 ```bash
@@ -218,9 +255,10 @@ bun test
 Covers the format registry (extension matching, header detection
 including the Jet magic prefix with leading NUL bytes, on-disk
 detection), encoder filename helpers, `mdb` value normalization
-(`Date` → ISO, OLE blobs → base64), and compressed-xml round-trip
-integration (tiny `.ewprj`, tiny `.ms14`, multi-block payload that
-spans more than one PKWare section, and an empty payload).
+(`Date` → ISO, OLE blobs → base64), the public library API (buffer
+round-trips, `decodeFile` against a temp file), and compressed-xml
+round-trip integration (tiny `.ewprj`, tiny `.ms14`, multi-block
+payload that spans more than one PKWare section, and an empty payload).
 
 ## Development
 
