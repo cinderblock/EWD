@@ -113,6 +113,20 @@ Multisim versions (e.g. `.ms9` or future `.ms20+`) need an explicit
 
 ## Install
 
+### As a CLI (from npm)
+
+```bash
+npm i -g electronics-workbench-decoder   # puts `ewd` and `ewe` on your PATH
+# …or run without installing:
+npx -p electronics-workbench-decoder ewd MyDesign.ms14
+```
+
+The published package is a self-contained bundle that runs on Node ≥ 18 —
+you don't need bun to use it. Installed this way, invoke the tools directly
+as `ewd` / `ewe` (the `bun run ewd` form below is for working from source).
+
+### For development (from source)
+
 Requires [bun](https://bun.sh) (≥ 1.0).
 
 ```bash
@@ -227,3 +241,33 @@ bun run typecheck    # tsc --noEmit
 ```
 
 CI on push/PR runs `check`, `typecheck`, and `test` on Ubuntu and Windows.
+
+## Releasing
+
+Publishing to npm is automated by GitHub Actions
+(`.github/workflows/publish.yml`) using npm Trusted Publishing (OIDC):
+no stored `NPM_TOKEN`, and each release gets a signed provenance
+attestation.
+
+To cut a release:
+
+```bash
+npm version patch        # or `minor` / `major`; bumps package.json, commits, tags vX.Y.Z
+git push --follow-tags   # pushing the tag triggers the publish workflow
+```
+
+The `vX.Y.Z` tag triggers the workflow, which verifies the tag matches
+`package.json`, runs the full gate (`check` + `typecheck` + `test` +
+license collection + `build`), then `npm publish --provenance`.
+
+Notes for maintainers:
+
+- The npm package has a **Trusted Publisher** configured for this repo and
+  the `publish.yml` workflow. If you rename the workflow file or the repo,
+  update that entry on npmjs.com to match — otherwise the OIDC identity
+  won't match and publishing fails with a 404/permission error.
+- The published artifact is a self-contained bundle. `dist/` and
+  `THIRD-PARTY-LICENSES.md` are generated at publish time (by the
+  `prepublishOnly` script) and are not committed.
+- Runtime dependencies are bundled into `dist/`, so the published package
+  declares none. `THIRD-PARTY-LICENSES.md` carries their license texts.
