@@ -246,6 +246,16 @@ Decoding covers every supported format. Encoding via the API covers the
 compressed-xml containers (`encodeBuffer`); `.prj` in-place editing remains
 CLI-only (`ewe`).
 
+### Memory
+
+Everything operates in memory — a file is read whole, decoded/encoded whole,
+then written. Peak RAM is on the order of the input plus the decoded output.
+This is fine for the file sizes Electronics Workbench produces (KB to a few
+MB). Streaming wouldn't help the `.prj`/`.usr` databases anyway (Jet is a
+random-access format that `mdb-reader` must load fully), and for the
+compressed-xml containers it would only cap RAM at one ~900 KB section — a
+marginal win not worth the added complexity at these sizes.
+
 ## Tests
 
 ```bash
@@ -309,3 +319,17 @@ Notes for maintainers:
   `prepublishOnly` script) and are not committed.
 - Runtime dependencies are bundled into `dist/`, so the published package
   declares none. `THIRD-PARTY-LICENSES.md` carries their license texts.
+
+## See also
+
+- [barncastle's `MultiSimConverter`](https://gist.github.com/barncastle/4277ac44aa47bf8c4389c7df0d160e56)
+  — a separate, independent C# implementation that handles the same
+  compressed-xml container. It round-trips the `.ms14` / `.ewprj` container
+  to and from plain XML by
+  P/Invoking the original PKWare `IMPLODE.DLL` (so its compression matches
+  Multisim's exactly, avoiding the [ratio caveat](#compression-ratio-caveat)
+  above). It dispatches on the same magic strings `ewd` reads
+  (`MSMCompressedElectronicsWorkbenchXML`, `CompressedElectronicsWorkbenchXML`)
+  and uses the same 900 000-byte block size. It covers only the compressed-xml
+  container — not the Jet (`.prj` / `.usr`) part databases, and it doesn't
+  convert designs to other EDA formats.
